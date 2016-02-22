@@ -1,0 +1,8 @@
+prefix=/home/josh/catkin_ws/devel
+
+Name: test_flight
+Description: Description of test_flight
+Version: 0.0.0
+Cflags: 
+Libs: -L/home/josh/catkin_ws/devel/lib 
+Requires: 
