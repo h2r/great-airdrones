@@ -1,0 +1,55 @@
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    sha: 36214cb67bc0bd2e10cd0bc24f4d3e42c36c55dc
+    hooks:
+    -   id: autopep8-wrapper
+    #-   id: flake8
+      # ---
+    -   id: check-json
+    -   id: pretty-format-json
+      # ---
+    -   id: check-yaml
+    -   id: check-xml
+      # ---
+    -   id: check-merge-conflict
+      # ---
+    -   id: check-added-large-files
+    -   id: check-case-conflict
+    -   id: trailing-whitespace
+        args: ['--no-markdown-linebreak-ext']
+  # ---
+-   repo: https://github.com/Lucas-C/pre-commit-hooks
+    sha: b600798f8dacfcc29862e3d58367b89d3090c6a7
+    hooks:
+    -   id: forbid-crlf
+    -   id: forbid-tabs
+  # ---
+-   repo: https://github.com/pre-commit/pre-commit
+    sha: 8dba3281d5051060755459dcf88e28fc26c27526
+    hooks:
+    -   id: validate_config
+    -   id: validate_manifest
+  # ---
+  #-   repo: https://github.com/pre-commit/mirrors-pylint
+  #    sha: 029186c31774c24af446c428eafc59ce8980dcb9
+  #    hooks:
+  #    -   id: pylint
+  # ---
+-   repo: https://github.com/pre-commit/mirrors-scss-lint
+    sha: f840ac610d8d9d76b666062416241f2156b3f388
+    hooks:
+    -   id: scss-lint
+  # ---
+-   repo: https://github.com/FalconSocial/pre-commit-mirrors-pep257
+    sha: 149e61b7a717945143fe51f010fe1c576e729a9f
+    hooks:
+    -   id: pep257
+  # ---
+-   repo: https://github.com/elidupuis/mirrors-jscs
+    sha: 5c6ba4da7eb5a09e0c1f849a5f86f5dcb871f876
+    hooks:
+    -   id: jscs
+  # ---
+-   repo: https://github.com/elidupuis/mirrors-standard
+    sha: b80b52bd7e45a1de26a28c94496aa0aa2bb1d470
+    hooks:
+    -   id: standard
