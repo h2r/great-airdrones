@@ -1,7 +1,0 @@
-set(_CATKIN_CURRENT_PACKAGE "test_flight")
-set(test_flight_MAINTAINER "josh <josh@todo.todo>")
-set(test_flight_DEPRECATED "")
-set(test_flight_VERSION "0.0.0")
-set(test_flight_BUILD_DEPENDS "roscpp" "rospy" "std_msgs")
-set(test_flight_RUN_DEPENDS "roscpp" "rospy" "std_msgs")
-set(test_flight_BUILDTOOL_DEPENDS "catkin")

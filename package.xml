@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<package>
+  <name>great_airdrones</name>
+  <version>0.0.1</version>
+  <description>The great_airdrones package</description>
+
+  <maintainer email="oratuomi@gmail.com">yury</maintainer>
+  <maintainer email="josh_roy@brown.edu">josh</maintainer>
+  <maintainer email="vidur_joshi@brown.edu">vidur</maintainer>
+
+  <license>Only for research use</license>
+</package>
