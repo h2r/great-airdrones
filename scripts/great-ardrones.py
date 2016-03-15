@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import roslib; roslib.load_manifest('drone_teleop')
+import roslib; roslib.load_manifest('great-ardrones')
 import rospy
 
 from geometry_msgs.msg import Twist
@@ -49,7 +49,7 @@ land_pub = rospy.Publisher('/ardrone/land', Empty)
 reset_pub = rospy.Publisher('/ardrone/reset', Empty)
 takeoff_pub = rospy.Publisher('/ardrone/takeoff', Empty)
 
-rospy.init_node('drone_teleop')
+rospy.init_node('great-ardrones')
 #rospy.Subscriber("/Drone/pose", String, callback)
 print "2"
 
