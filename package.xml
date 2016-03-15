@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package>
-  <name>drone_position</name>
+  <name>great-ardrones</name>
   <version>0.0.0</version>
-  <description>The drone_position package</description>
+  <description>The great-ardrones package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag --> 
   <!-- Example:  -->
@@ -19,7 +19,7 @@
   <!-- Url tags are optional, but mutiple are allowed, one per tag -->
   <!-- Optional attribute type can be: website, bugtracker, or repository -->
   <!-- Example: -->
-  <!-- <url type="website">http://wiki.ros.org/drone_position</url> -->
+  <!-- <url type="website">http://wiki.ros.org/great-ardrones</url> -->
 
 
   <!-- Author tags are optional, mutiple are allowed, one per tag -->
