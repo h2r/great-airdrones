@@ -26,7 +26,7 @@ def callback(data):
     rospy.loginfo("Current Location %s",data.data)
     cur = np.array(data.data)
     if np.sum(np.abs(cur-oldLoc))==0:
-    	LAND_PUB.publish(Empty())
+    	land_pub.publish(Empty())
     	print "out of motion capture rig"
     else:
 	   global oldLoc
@@ -41,8 +41,9 @@ def callback(data):
 
 
 
+print "1"
 settings = termios.tcgetattr(sys.stdin)
-print "here"
+
 pub = rospy.Publisher('cmd_vel', Twist)
 land_pub = rospy.Publisher('/ardrone/land', Empty)
 reset_pub = rospy.Publisher('/ardrone/reset', Empty)
@@ -50,20 +51,33 @@ takeoff_pub = rospy.Publisher('/ardrone/takeoff', Empty)
 
 rospy.init_node('drone_teleop')
 #rospy.Subscriber("/Drone/pose", String, callback)
-print "all done"
+print "2"
+
 try:
     while(True):
         key = getKey()
         # takeoff and landing
         print key
-	if key == 'l':
+        if key=="q":
+            quit()
+        if key == 'l':
             land_pub.publish(Empty())
         elif key == 't':
             takeoff_pub.publish(Empty())
 
         twist = Twist()
-        if key[:4]=="goal":
-        	goal = np.array([float(x) for x in key[4:].strip().split()])
+        if key=="g":
+            key = getKey()
+            cur = ""
+            temp = []
+            while key!="e":
+                if key!="-" and not key.isdigit():
+                    cur += key
+                else:
+                    temp.append(int(cur))
+                    cur = ""
+                key = getKey()
+        	goal = np.array(temp)
         elif len(velocityTStamp)==2 and time.clock()-velocityTStamp[1]<1:
         	LINEAR.x, LINEAR.y, LINEAR.z = velocityTStamp[0]
         pub.publish(twist)
@@ -72,7 +86,6 @@ except Exception as e:
     try:
 	print repr(e)
 	print e
-	print "failed"
 	land_pub.publish(Empty())
 	twist = Twist()
 	pub.publish(twist)
