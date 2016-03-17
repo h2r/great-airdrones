@@ -50,7 +50,7 @@ reset_pub = rospy.Publisher('/ardrone/reset', Empty)
 takeoff_pub = rospy.Publisher('/ardrone/takeoff', Empty)
 
 rospy.init_node('great-ardrones')
-#rospy.Subscriber("/Drone/pose", String, callback)
+rospy.Subscriber("vrpn_ros_node/Drone/pose", String, callback)
 print "2"
 
 try:
@@ -71,13 +71,13 @@ try:
             cur = ""
             temp = []
             while key!="e":
-                if key!="-" and not key.isdigit():
+                if key=="-" or key.isdigit():
                     cur += key
-                else:
+                elif key==" ":
                     temp.append(int(cur))
                     cur = ""
                 key = getKey()
-        	goal = np.array(temp)
+            goal = np.array(temp)
         elif len(velocityTStamp)==2 and time.clock()-velocityTStamp[1]<1:
         	LINEAR.x, LINEAR.y, LINEAR.z = velocityTStamp[0]
         pub.publish(twist)
