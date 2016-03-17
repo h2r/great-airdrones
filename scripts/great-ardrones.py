@@ -76,14 +76,21 @@ try:
             key = getKey()
             cur = ""
             temp = []
-            while key!="e":
+            while key!="e" and len(temp)<3:
                 if key=="-" or key.isdigit():
                     cur += key
                 elif key==" ":
-                    temp.append(int(cur))
+                    try:
+                        temp.append(int(cur))
+                    except Exception as e:
+                        print e
                     cur = ""
                 key = getKey()
-            goal = np.array(temp)
+            if len(temp)==3:
+                goal = np.array(temp)
+            else:
+                print "new goal incorrectly formatted", temp
+            print goal
         elif len(velocityTStamp)==2 and time.clock()-velocityTStamp[1]<1:
         	LINEAR = twist.LINEAR
                 LINEAR.x, LINEAR.y, LINEAR.z = velocityTStamp[0]
