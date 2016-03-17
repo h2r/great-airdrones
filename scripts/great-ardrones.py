@@ -55,7 +55,7 @@ rospy.init_node('great-ardrones')
 #<<<<<<< HEAD
 rospy.Subscriber("vrpn_client_node/Drone/pose", String, callback)
 #=======
-rospy.Subscriber("vrpn_ros_node/Drone/pose", String, callback)
+#rospy.Subscriber("vrpn_ros_node/Drone/pose", String, callback)
 #>>>>>>> 6e04459de384aaba61d3c781e97f6a8752e5b2b9
 print "2"
 
