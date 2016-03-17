@@ -4,7 +4,7 @@ import rospy
 
 from geometry_msgs.msg import Twist
 from std_msgs.msg import Empty
-
+from std_msgs.msg import String
 import sys, select, termios, tty, time, numpy as np
 
 
@@ -50,7 +50,7 @@ reset_pub = rospy.Publisher('/ardrone/reset', Empty)
 takeoff_pub = rospy.Publisher('/ardrone/takeoff', Empty)
 
 rospy.init_node('great-ardrones')
-#rospy.Subscriber("/Drone/pose", String, callback)
+rospy.Subscriber("vrpn_client_node/Drone/pose", String, callback)
 print "2"
 
 try:
