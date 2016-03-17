@@ -5,6 +5,7 @@ import rospy
 from geometry_msgs.msg import Twist
 from std_msgs.msg import Empty
 from std_msgs.msg import String
+
 import sys, select, termios, tty, time, numpy as np
 
 
@@ -23,6 +24,7 @@ global oldLoc
 oldLoc = np.array([1, 1, 1])
 
 def callback(data):
+    print "received", data
     rospy.loginfo("Current Location %s",data.data)
     cur = np.array(data.data)
     if np.sum(np.abs(cur-oldLoc))==0:
@@ -50,7 +52,11 @@ reset_pub = rospy.Publisher('/ardrone/reset', Empty)
 takeoff_pub = rospy.Publisher('/ardrone/takeoff', Empty)
 
 rospy.init_node('great-ardrones')
+#<<<<<<< HEAD
 rospy.Subscriber("vrpn_client_node/Drone/pose", String, callback)
+#=======
+rospy.Subscriber("vrpn_ros_node/Drone/pose", String, callback)
+#>>>>>>> 6e04459de384aaba61d3c781e97f6a8752e5b2b9
 print "2"
 
 try:
@@ -71,15 +77,17 @@ try:
             cur = ""
             temp = []
             while key!="e":
-                if key!="-" and not key.isdigit():
+                if key=="-" or key.isdigit():
                     cur += key
-                else:
+                elif key==" ":
                     temp.append(int(cur))
                     cur = ""
                 key = getKey()
-        	goal = np.array(temp)
+            goal = np.array(temp)
         elif len(velocityTStamp)==2 and time.clock()-velocityTStamp[1]<1:
-        	LINEAR.x, LINEAR.y, LINEAR.z = velocityTStamp[0]
+        	LINEAR = twist.LINEAR
+                LINEAR.x, LINEAR.y, LINEAR.z = velocityTStamp[0]
+        print twist
         pub.publish(twist)
 
 except Exception as e:
