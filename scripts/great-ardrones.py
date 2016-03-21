@@ -23,19 +23,28 @@ def getKey():
     return key
 
 
-velocityTStamp = ()
+global velocityTStamp
+velocityTStamp = []
 goal = None
 
 gamma = 0.01
 bound = 0.001
-
+flag = 0
 def callback(data):
     cur = [data.pose.position.x, data.pose.position.y, data.pose.position.z]
+    #print(goal, cur)
+    #print goal
     if goal is not None:
 	velocities = [gamma*(i - j) for i,j in zip(goal, cur)]
-	velocities] = [min(val, bound)  for val in velocities]
-	velocities] = [max(val, -bound) for val in velocities]
-	velocityTStamp = (velocities + time.clock())
+	velocities = [min(val, bound)  for val in velocities]
+	velocities = [max(val, -bound) for val in velocities]
+	#velocityTStamp = velocities
+        velocities.append(time.clock())
+        flag = 1
+        global velocityTStamp
+        velocityTStamp = velocities
+
+    #print(velocityTStamp)
 
 
 settings = termios.tcgetattr(sys.stdin)
@@ -83,18 +92,23 @@ try:
             if len(temp) == 3:
                 goal = temp
             else:
-                print("New goal incorrectly formatted %.6f" % temp)
+                print "New goal incorrectly formatted", temp
 
-            print("Goal is %.6f" % goal)
+            print "Goal is", goal
 
-        elif len(velocityTStamp) == 2 and time.clock() - velocityTStamp[3] < 1:
-            twist.linear.x = velocityTStamp[0]
-            twist.linear.y = velocityTStamp[1]
-            twist.linear.z = velocityTStamp[2]
-
+        elif len(velocityTStamp) == 4:
+            if  time.clock() - velocityTStamp[3] > 1:
+                print "old velocity data"
+            else:
+                print "h1"
+                twist.linear.x = velocityTStamp[1]
+                twist.linear.y = velocityTStamp[0]
+                twist.linear.z = velocityTStamp[2]
+                print "h2"
         print twist
+        print "len velocity", velocityTStamp, flag
         pub.publish(twist)
-
+        print "3"
 except Exception as e:
     try:
 	print repr(e)
