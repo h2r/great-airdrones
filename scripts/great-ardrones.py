@@ -27,9 +27,8 @@ global velocityTStamp
 velocityTStamp = []
 goal = None
 
-gamma = 0.01
-bound = 0.001
-flag = 0
+gamma = 0.10
+bound = 0.1
 def callback(data):
     cur = [data.pose.position.x, data.pose.position.y, data.pose.position.z]
     #print(goal, cur)
@@ -40,7 +39,6 @@ def callback(data):
 	velocities = [max(val, -bound) for val in velocities]
 	#velocityTStamp = velocities
         velocities.append(time.clock())
-        flag = 1
         global velocityTStamp
         velocityTStamp = velocities
 
@@ -101,12 +99,12 @@ try:
                 print "old velocity data"
             else:
                 print "h1"
-                twist.linear.x = velocityTStamp[1]
-                twist.linear.y = velocityTStamp[0]
-                twist.linear.z = velocityTStamp[2]
+                twist.linear.x = velocityTStamp[0]
+                twist.linear.y = -1 * velocityTStamp[2]
+                twist.linear.z = velocityTStamp[1]
                 print "h2"
         print twist
-        print "len velocity", velocityTStamp, flag
+        print "len velocity", velocityTStamp
         pub.publish(twist)
         print "3"
 except Exception as e:
