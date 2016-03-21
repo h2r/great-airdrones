@@ -29,6 +29,12 @@ goal = None
 
 gamma = 0.10
 bound = 0.1
+global initialYaw
+global currentYaw
+currentYaw = 0
+initialYaw = 0.0
+global firstRun
+firstRun = True
 def callback(data):
     cur = [data.pose.position.x, data.pose.position.y, data.pose.position.z]
     #print(goal, cur)
@@ -41,6 +47,13 @@ def callback(data):
         velocities.append(time.clock())
         global velocityTStamp
         velocityTStamp = velocities
+        global firstRun
+        global initialYaw
+        global currentYaw
+        if firstRun:
+            initialYaw = data.pose.orientation.x
+            firstRun = False
+        currentYaw = data.pose.orientation.x
 
     #print(velocityTStamp)
 
@@ -102,6 +115,7 @@ try:
                 twist.linear.x = velocityTStamp[0]
                 twist.linear.y = -1 * velocityTStamp[2]
                 twist.linear.z = velocityTStamp[1]
+                twist.angular.y = (initialYaw - currentYaw)
                 print "h2"
         print twist
         print "len velocity", velocityTStamp
