@@ -83,6 +83,19 @@ try:
                 print "New goal incorrectly formatted", inputString
                 print "The goal remains ", goal
         elif latestGridData is not None:
+            """
+            The drone must be carefully initialized in the optitrak system. 
+            Ensure that the following conditions hold:
+                1) Moving forward increases the drone's x position in the grid
+                2) Moving left decreases the drone's z position in the grid
+                3) Moving up decreases the drone's y position in the grid
+                4) When in a position satisfying 1-3 the drone's angles 
+                   are all 0
+
+            These conditions can be satisfied by correctly aligning the 
+            drone with the optitrak co-ordinate system and then initializing 
+            it in the software so that the angles are set to 0.
+            """
             if initialYaw is None:
                 initialYaw = latestGridData[3]
             if goal is not None and time.clock() - latestGridData[4] < 1:
@@ -92,7 +105,7 @@ try:
                 twist.linear.y = velX*math.sin(currentYaw) - velZ*math.cos(currentYaw)
                 twist.linear.z = -velY
             elif  time.clock() - latestGridData[4] > 1:
-                print "the most recent position data is old, velocity set to 0"
+                print "The most recent position data is old, velocity set to 0"
         print twist
         pub.publish(twist)
 except Exception as e:
