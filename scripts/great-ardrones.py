@@ -5,6 +5,7 @@ import select
 import termios
 import tty
 import time
+import re
 
 import roslib
 roslib.load_manifest('great-ardrones')
@@ -23,39 +24,18 @@ def getKey():
     return key
 
 
-global velocityTStamp
-velocityTStamp = []
+global latestGridData
+latestGridData = None
 goal = None
-
 gamma = 0.10
 bound = 0.1
-global initialYaw
-global currentYaw
-currentYaw = 0
-initialYaw = 0.0
-global firstRun
-firstRun = True
-def callback(data):
-    cur = [data.pose.position.x, data.pose.position.y, data.pose.position.z]
-    #print(goal, cur)
-    #print goal
-    if goal is not None:
-	velocities = [gamma*(i - j) for i,j in zip(goal, cur)]
-	velocities = [min(val, bound)  for val in velocities]
-	velocities = [max(val, -bound) for val in velocities]
-	#velocityTStamp = velocities
-        velocities.append(time.clock())
-        global velocityTStamp
-        velocityTStamp = velocities
-        global firstRun
-        global initialYaw
-        global currentYaw
-        if firstRun:
-            initialYaw = data.pose.orientation.x
-            firstRun = False
-        currentYaw = data.pose.orientation.x
+initialYaw = None
 
-    #print(velocityTStamp)
+def callback(data):
+    global latestGridData
+    latestGridData = [data.pose.position.x, data.pose.position.y, 
+    data.pose.position.z, data.pose.orientation.y, time.clock()]
+
 
 
 settings = termios.tcgetattr(sys.stdin)
@@ -64,63 +44,57 @@ pub = rospy.Publisher('cmd_vel', Twist)
 land_pub = rospy.Publisher('/ardrone/land', Empty)
 reset_pub = rospy.Publisher('/ardrone/reset', Empty)
 takeoff_pub = rospy.Publisher('/ardrone/takeoff', Empty)
-
 rospy.init_node('great-ardrones')
-print rospy.Subscriber("/vrpn_client_node/Drone/pose", PoseStamped, callback)
+rospy.Subscriber("/vrpn_client_node/Drone/pose", PoseStamped, callback)
+
+
+def computeVelocities(goal, cur):
+    velocities = [gamma*(i - j) for i,j in zip(goal, cur)]
+    velocities = [min(val, bound)  for val in velocities]
+    velocities = [max(val, -bound) for val in velocities]
+    return velocities
 
 try:
     while(True):
-        print velocityTStamp
         key = getKey()
-
-        # takeoff and landing
+        twist = Twist()
         print key
         if key == "q":
             quit()
+        elif key=="d":
+            goal = None
         elif key == 'l':
             land_pub.publish(Empty())
         elif key == 't':
             takeoff_pub.publish(Empty())
-
-        twist = Twist()
-        if key == "g":
-            key = getKey()
-            cur = ""
-            temp = []
-
-            while key != "e" and len(temp) < 3:
-                if key == "-" or key.isdigit() or key == ".":
-                    cur += key
-                elif key == " ":
-                    try:
-                        temp.append(float(cur))
-                    except Exception as e:
-                        print e
-
-                    cur = ""
+        elif key == "g":
+            inputString = ""
+            while key != "e":
                 key = getKey()
-
-            if len(temp) == 3:
-                goal = temp
-            else:
-                print "New goal incorrectly formatted", temp
-
-            print "Goal is", goal
-
-        elif len(velocityTStamp) == 4:
-            if  time.clock() - velocityTStamp[3] > 1:
-                print "old velocity data"
-            else:
-                print "h1"
-                twist.linear.x = velocityTStamp[0]
-                twist.linear.y = -1 * velocityTStamp[2]
-                twist.linear.z = velocityTStamp[1]
-                twist.angular.y = (initialYaw - currentYaw)
-                print "h2"
+                print key
+                inputString += key
+            inputString = inputString[:-1]
+            try:
+                x, y, z = re.findall(r"[-+]?\d*\.\d+|\d+", inputString)
+                goal = [float(x), float(y), float(z)]
+                print "Successfully set new goal", goal
+            except Exception as e:
+                print e
+                print "New goal incorrectly formatted", inputString
+                print "The goal remains ", goal
+        elif latestGridData is not None:
+            if initialYaw is None:
+                initialYaw = latestGridData[3]
+            if goal is not None and time.clock() - latestGridData[4] < 1:
+                currentYaw = latestGridData[3]-initialYaw
+                velX, velY, velZ = computeVelocities(goal, latestGridData[:3])
+                twist.linear.x = velX*math.cos(currentYaw) + velZ*math.sin(currentYaw)
+                twist.linear.y = velX*math.sin(currentYaw) - velZ*math.cos(currentYaw)
+                twist.linear.z = -velY
+            elif  time.clock() - latestGridData[4] > 1:
+                print "the most recent position data is old, velocity set to 0"
         print twist
-        print "len velocity", velocityTStamp
         pub.publish(twist)
-        print "3"
 except Exception as e:
     try:
 	print repr(e)
