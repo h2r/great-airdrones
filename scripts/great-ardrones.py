@@ -6,6 +6,7 @@ import termios
 import tty
 import time
 import re
+import math
 
 import roslib
 roslib.load_manifest('great-ardrones')
@@ -33,7 +34,7 @@ initialYaw = None
 
 def callback(data):
     global latestGridData
-    latestGridData = [data.pose.position.x, data.pose.position.y, 
+    latestGridData = [data.pose.position.x, data.pose.position.y,
     data.pose.position.z, data.pose.orientation.y, time.clock()]
 
 
@@ -45,7 +46,7 @@ land_pub = rospy.Publisher('/ardrone/land', Empty)
 reset_pub = rospy.Publisher('/ardrone/reset', Empty)
 takeoff_pub = rospy.Publisher('/ardrone/takeoff', Empty)
 rospy.init_node('great-ardrones')
-rospy.Subscriber("/vrpn_client_node/Drone/pose", PoseStamped, callback)
+rospy.Subscriber("/vrpn_client_node/ardrone/pose", PoseStamped, callback)
 
 
 def computeVelocities(goal, cur):
@@ -57,10 +58,15 @@ def computeVelocities(goal, cur):
 try:
     while(True):
         key = getKey()
-        twist = Twist()
         print key
+        twist = Twist()
         if key == "q":
             quit()
+        elif key=="r":
+            reset_pub.publish(Empty())
+        elif key=="c":
+            goal = latestGridData[:3]
+            print "goal is current location", goal
         elif key=="d":
             goal = None
         elif key == 'l':
@@ -71,7 +77,6 @@ try:
             inputString = ""
             while key != "e":
                 key = getKey()
-                print key
                 inputString += key
             inputString = inputString[:-1]
             try:
@@ -84,16 +89,16 @@ try:
                 print "The goal remains ", goal
         elif latestGridData is not None:
             """
-            The drone must be carefully initialized in the optitrak system. 
+            The drone must be carefully initialized in the optitrak system.
             Ensure that the following conditions hold:
                 1) Moving forward increases the drone's x position in the grid
                 2) Moving left decreases the drone's z position in the grid
                 3) Moving up decreases the drone's y position in the grid
-                4) When in a position satisfying 1-3 the drone's angles 
+                4) When in a position satisfying 1-3 the drone's angles
                    are all 0
 
-            These conditions can be satisfied by correctly aligning the 
-            drone with the optitrak co-ordinate system and then initializing 
+            These conditions can be satisfied by correctly aligning the
+            drone with the optitrak co-ordinate system and then initializing
             it in the software so that the angles are set to 0.
             """
             if initialYaw is None:
@@ -101,12 +106,13 @@ try:
             if goal is not None and time.clock() - latestGridData[4] < 1:
                 currentYaw = latestGridData[3]-initialYaw
                 velX, velY, velZ = computeVelocities(goal, latestGridData[:3])
-                twist.linear.x = velX*math.cos(currentYaw) + velZ*math.sin(currentYaw)
+                twist.linear.x = (velX*math.cos(currentYaw) + velZ*math.sin(currentYaw))
                 twist.linear.y = velX*math.sin(currentYaw) - velZ*math.cos(currentYaw)
                 twist.linear.z = -velY
             elif  time.clock() - latestGridData[4] > 1:
                 print "The most recent position data is old, velocity set to 0"
-        print twist
+        print "twist = ", twist
+        #print goal
         pub.publish(twist)
 except Exception as e:
     try:
