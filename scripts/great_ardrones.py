@@ -6,10 +6,6 @@ import termios
 import tty
 import time
 import re
-import math
-
-import roslib
-roslib.load_manifest('great-ardrones')
 import rospy
 
 from geometry_msgs.msg import Twist
@@ -49,7 +45,7 @@ pub = rospy.Publisher('cmd_vel', Twist)
 land_pub = rospy.Publisher('/ardrone/land', Empty)
 reset_pub = rospy.Publisher('/ardrone/reset', Empty)
 takeoff_pub = rospy.Publisher('/ardrone/takeoff', Empty)
-rospy.init_node('great-ardrones')
+rospy.init_node('great_ardrones')
 rospy.Subscriber("/vrpn_client_node/ardrone/pose", PoseStamped, callback)
 
 
