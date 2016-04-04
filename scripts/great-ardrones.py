@@ -27,6 +27,10 @@ def getKey():
 
 global latestGridData
 latestGridData = None
+global lastSeq
+lastSeq = -1
+global timeElapsed
+timeElapsed = 0
 goal = None
 gamma = 0.10
 bound = 0.1
@@ -35,7 +39,7 @@ initialYaw = None
 def callback(data):
     global latestGridData
     latestGridData = [data.pose.position.x, data.pose.position.y,
-    data.pose.position.z, data.pose.orientation.y, time.clock()]
+    data.pose.position.z, data.pose.orientation.y, data.header.seq]
 
 
 
@@ -51,6 +55,9 @@ rospy.Subscriber("/vrpn_client_node/ardrone/pose", PoseStamped, callback)
 
 def computeVelocities(goal, cur):
     velocities = [gamma*(i - j) for i,j in zip(goal, cur)]
+    for i, v in enumerate(velocities):
+        if abs(v) < 0.001:
+            velocities[i] = 0
     velocities = [min(val, bound)  for val in velocities]
     velocities = [max(val, -bound) for val in velocities]
     return velocities
@@ -103,14 +110,23 @@ try:
             """
             if initialYaw is None:
                 initialYaw = latestGridData[3]
-            if goal is not None and time.clock() - latestGridData[4] < 1:
+
+            if abs(time.clock() - timeElapsed) >= 0.01:
+                if lastSeq == latestGridData[4]:
+                    print "Gone out of the grid. Move back in"
+                    pub.publish(Twist())
+                    land_pub.publish(Empty())
+                else:
+                    lastSeq = latestGridData[4]
+                timeElapsed = time.clock()
+
+            elif goal is not None:
                 currentYaw = latestGridData[3]-initialYaw
                 velX, velY, velZ = computeVelocities(goal, latestGridData[:3])
-                twist.linear.x = (velX*math.cos(currentYaw) + velZ*math.sin(currentYaw))
-                twist.linear.y = velX*math.sin(currentYaw) - velZ*math.cos(currentYaw)
-                twist.linear.z = -velY
-            elif  time.clock() - latestGridData[4] > 1:
-                print "The most recent position data is old, velocity set to 0"
+                twist.linear.x = velX#(velX*math.cos(currentYaw) + velZ*math.sin(currentYaw))
+                twist.linear.y = -velZ#velX*math.sin(currentYaw) - velZ*math.cos(currentYaw)
+                twist.linear.z = velY
+
         print "twist = ", twist
         #print goal
         pub.publish(twist)
