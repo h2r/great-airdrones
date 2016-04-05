@@ -6,7 +6,7 @@
 
 from copy import deepcopy
 import rospy
-import clock
+import time
 
 from std_msgs.msg import Empty
 from geometry_msgs.msg import Twist, PoseStamped
@@ -29,12 +29,14 @@ class ARDrone:
         self.__position = None
         self.__vrpnsequence = None
         self.__status = 'landed'
+        self.__rotation = None
+        self.__lastSeq = -1
 
         def getvrpndata(vrpndata):
             """Get vrpn position data and store into the class member."""
             point = vrpndata.pose.position
             self.__position = [point.x, point.y, point.z]
-            self.__vrpnsequence = data.header.seq
+            self.__vrpnsequence = vrpndata.header.seq
 
         self.__getvrpndata = getvrpndata
 
@@ -86,11 +88,11 @@ class ARDrone:
         while True:
             if abs(time.clock() - time_elapsed) >= 0.01:
                 if last_seq == self.__vrpnsequence:
+                    self.__twist.publish(Twist())
+                    self.__land.publish(Empty())
                     return "I just went out of the grid and landed"
-                    pub.publish(Twist())
-                    land_pub.publish(Empty())
                 else:
-                    lastSeq = self.__vrpnsequence
+                    self.__lastSeq = self.__vrpnsequence
                 time_elapsed = time.clock()
 
             droneposition = deepcopy(self.__position)
