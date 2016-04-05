@@ -69,7 +69,6 @@ class ARDrone:
         message.angular.y = angular[1]
         message.angular.z = angular[2]
 
-        print("twisting")
         self.__twist.publish(message)
 
     def goto(self, wherepoint):
@@ -85,15 +84,15 @@ class ARDrone:
         last_seq = self.__vrpnsequence
 
         # TODO: we need to run this inside thread
-        while True:
-            if abs(time.clock() - time_elapsed) >= 0.01:
-                if last_seq == self.__vrpnsequence:
-                    self.__twist.publish(Twist())
-                    self.__land.publish(Empty())
-                    return "I just went out of the grid and landed"
-                else:
-                    self.__lastSeq = self.__vrpnsequence
-                time_elapsed = time.clock()
+        for _ in range(10000):
+            # if abs(time.clock() - time_elapsed) >= 0.01:
+            #     if last_seq == self.__vrpnsequence:
+            #         self.__twist.publish(Twist())
+            #         self.__land.publish(Empty())
+            #         return "I just went out of the grid and landed"
+            #     else:
+            #         self.__lastSeq = self.__vrpnsequence
+            #     time_elapsed = time.clock()
 
             droneposition = deepcopy(self.__position)
 
@@ -101,7 +100,7 @@ class ARDrone:
             pointpairs = zip(wherepoint, droneposition)
             twistlinear = [0.01*(i - j) for i, j in pointpairs]
 
-            if max([abs(u) for u in twistlinear]) < 0.05:
+            if max([abs(u) for u in twistlinear]) < 0.0005:
                 break
 
             twistangular = [0.0, 0.0, 0.0]
@@ -110,5 +109,3 @@ class ARDrone:
             twistlinear = [max(val, -0.001) for val in twistlinear]
 
             self.settwist(twistlinear, twistangular)
-
-        return "success"
