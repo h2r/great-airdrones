@@ -3,24 +3,23 @@
 
 """Interactive prompt for ARDrone class."""
 
-
-from prompt_toolkit import prompt
-from prompt_toolkit.contrib.completers import WordCompleter
-from prompt_toolkit.history import InMemoryHistory
-from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
-
-from rospy import init_node
 from functools import partial
-
 from types import ModuleType
 
 import traceback
 import os
 import sys
 
-currentpath = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(currentpath)
-import ardrone_cli_parser as parser
+from prompt_toolkit import prompt
+from prompt_toolkit.contrib.completers import WordCompleter
+from prompt_toolkit.history import FileHistory
+from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
+
+from rospy import init_node
+
+CURRENTPATH = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(CURRENTPATH)
+import ardroneparser as parser
 
 from pygments.style import Style
 from pygments.token import Token
@@ -29,7 +28,7 @@ from pygments.styles.default import DefaultStyle
 
 def is_public_method(module, word):
     """Check if the class member is public method."""
-    if  word.startswith('__'):
+    if word.startswith('__'):
         return False
 
     obj = getattr(module, word)
@@ -74,7 +73,7 @@ def main():
         'auto_suggest': AutoSuggestFromHistory(),
         'completer':    WordCompleter(commands, ignore_case=True),
         'style':        document_style,
-        'history':      InMemoryHistory()
+        'history':      FileHistory('.ardrone_cli_history')
     }
 
     drone_list = getattr(parser, '__drones__')
@@ -87,7 +86,7 @@ def main():
             if len(inputtext) == 0:
                 continue
 
-            def prompt_error(*args):
+            def prompt_error(*args, **kwargs):
                 """Print prompt incorrect command message."""
                 print('command <%s> is not supported' % inputtext[0])
 
@@ -102,7 +101,7 @@ def main():
             if len(inputtext) == 0:
                 command()
             else:
-                command(*inputtext[1:], dronename='ardrone')
+                command(*inputtext[1:])
 
         except (TypeError, AttributeError):
             traceback.print_exc(file=sys.stdout)

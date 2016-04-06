@@ -7,22 +7,23 @@
 import inspect
 import ardrone
 import sys
+import sleep
 
 
 __drones__ = {}
 __thismodule = sys.modules[__name__]
 
-def exit(dronename=None):
+def exit():
     """Exit the prompt."""
     raise EOFError
 
 
-def quit(dronename=None):
+def quit():
     """Quit the prompt."""
     raise EOFError
 
 
-def help(commandname, dronename=None):
+def help(commandname):
     """Print <commandname> description and signature."""
     command = getattr(__thismodule, commandname, None)
 
@@ -38,34 +39,38 @@ def help(commandname, dronename=None):
         print('\033[31mDescription\033[0m: %s' % inspect.getdoc(command))
 
 
-def takeoff(dronename=None):
+def takeoff(dronename='ardrone'):
     """Take the drone off."""
     if dronename not in __drones__:
         __drones__[dronename] = ardrone.ARDrone(dronename)
+        time.sleep(1)
 
     __drones__[dronename].takeoff()
 
 
-def land(dronename=None):
+def land(dronename='ardrone'):
     """Land the drone."""
     if dronename not in __drones__:
         __drones__[dronename] = ardrone.ARDrone(dronename)
+        time.sleep(1)
 
     __drones__[dronename].land()
 
 
-def reset(dronename=None):
+def reset(dronename='ardrone'):
     """Reset the drone."""
     if dronename not in __drones__:
         __drones__[dronename] = ardrone.ARDrone(dronename)
+        time.sleep(1)
 
     __drones__[dronename].reset()
 
 
-def goto(x, y, z, dronename=None):
+def goto(x, y, z, dronename='ardrone'):
     """Make drone go to 3D point."""
     if dronename not in __drones__:
         __drones__[dronename] = ardrone.ARDrone(dronename)
+        time.sleep(1)
 
     result = __drones__[dronename].goto([x, y, z])
     if result != "success":
