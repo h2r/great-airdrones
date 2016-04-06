@@ -1,2 +1,5 @@
+ardrone_autonomy*
+drone_teleop*
+/CMakeLists.txt
 __pycache__/*
 .ardrone_cli_history

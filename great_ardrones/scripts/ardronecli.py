@@ -19,7 +19,7 @@ from rospy import init_node
 
 CURRENTPATH = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(CURRENTPATH)
-import ardroneparser as parser
+import ardronecommands
 
 from pygments.style import Style
 from pygments.token import Token
@@ -64,7 +64,7 @@ def main():
 
     init_node('great_ardrones')
 
-    commands = filter(lambda word: is_public_method(parser, word), dir(parser))
+    commands = filter(lambda word: is_public_method(ardronecommands, word), dir(ardronecommands))
     commands = [s.replace('_', ' ') for s in commands]
 
     promptargs = {
@@ -76,7 +76,7 @@ def main():
         'history':      FileHistory('.ardrone_cli_history')
     }
 
-    drone_list = getattr(parser, '__drones__')
+    drone_list = getattr(ardronecommands, '__drones__')
 
     while True:
         try:
@@ -93,12 +93,12 @@ def main():
             prompt_default = prompt_error
 
             if inputtext[0] in drone_list and len(inputtext) > 1:
-                cmd = getattr(parser, inputtext[1], prompt_error)
+                cmd = getattr(ardronecommands, inputtext[1], prompt_error)
                 prompt_default = partial(cmd, dronename=inputtext[0])
 
-            command = getattr(parser, inputtext[0], prompt_default)
+            command = getattr(ardronecommands, inputtext[0], prompt_default)
 
-            if len(inputtext) == 0:
+            if len(inputtext) == 1:
                 command()
             else:
                 command(*inputtext[1:])
@@ -107,7 +107,7 @@ def main():
             traceback.print_exc(file=sys.stdout)
 
             print('%s: wrong command signature' % inputtext[0])
-            getattr(parser, 'help')(inputtext[0])
+            getattr(ardronecommands, 'help')(inputtext[0])
 
         except (EOFError, KeyboardInterrupt):
             break

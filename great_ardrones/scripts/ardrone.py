@@ -5,8 +5,9 @@
 
 
 from copy import deepcopy
-import rospy
+import math
 import time
+import rospy
 
 from std_msgs.msg import Empty
 from geometry_msgs.msg import Twist, PoseStamped
@@ -35,7 +36,10 @@ class ARDrone:
         def getvrpndata(vrpndata):
             """Get vrpn position data and store into the class member."""
             point = vrpndata.pose.position
-            self.__position = [point.x, point.y, point.z]
+            angles = vrpndata.pose.orientation
+            self.__rotation = [angles.x, -angles.z, angles.y]
+
+            self.__position = [3.14*point.x, 3.14*-point.z, 3.14*point.y]
             self.__vrpnsequence = vrpndata.header.seq
 
         self.__getvrpndata = getvrpndata
@@ -45,31 +49,39 @@ class ARDrone:
 
     def takeoff(self):
         """Take the drone off."""
-        self.__takeoff.publish(Empty())
         self.__status = 'flying'
+        self.__takeoff.publish(Empty())
 
     def land(self):
         """Land the drone."""
+        self.settwist([0, 0, 0], [0, 0, 0])
         self.__land.publish(Empty())
         self.__status = 'landed'
 
     def reset(self):
         """Reset the drone."""
+        self.settwist([0, 0, 0], [0, 0, 0])
         self.__reset.publish(Empty())
+        self.__status = "landed"
 
     def settwist(self, linear, angular):
         """Publish twist."""
         message = Twist()
 
-        message.linear.x = +linear[0]
-        message.linear.y = -linear[2]
-        message.linear.z = +linear[1]
+        message.linear.x = linear[0]
+        message.linear.y = linear[1]
+        message.linear.z = linear[2]
 
         message.angular.x = angular[0]
         message.angular.y = angular[1]
         message.angular.z = angular[2]
 
         self.__twist.publish(message)
+
+    def getposition(self):
+        """Return drone global position."""
+        droneposition = deepcopy(self.__position)
+        return droneposition
 
     def goto(self, wherepoint):
         """Make the drone going to <wherepoint>."""
@@ -84,28 +96,38 @@ class ARDrone:
         last_seq = self.__vrpnsequence
 
         # TODO: we need to run this inside thread
-        for _ in range(10000):
-            # if abs(time.clock() - time_elapsed) >= 0.01:
-            #     if last_seq == self.__vrpnsequence:
-            #         self.__twist.publish(Twist())
-            #         self.__land.publish(Empty())
-            #         return "I just went out of the grid and landed"
-            #     else:
-            #         self.__lastSeq = self.__vrpnsequence
-            #     time_elapsed = time.clock()
+        for _ in range(1000000):
+            if abs(time.clock() - time_elapsed) >= 0.4:
+                if last_seq == self.__vrpnsequence:
+                    self.__twist.publish(Twist())
+                    self.__land.publish(Empty())
+                    return "I just went out of the grid and landed"
+
+                else:
+                    last_seq = self.__vrpnsequence
+                time_elapsed = time.clock()
 
             droneposition = deepcopy(self.__position)
 
-            # TODO: consider orientation
-            pointpairs = zip(wherepoint, droneposition)
-            twistlinear = [0.01*(i - j) for i, j in pointpairs]
-
-            if max([abs(u) for u in twistlinear]) < 0.0005:
-                break
-
+            twistlinear = [0.0, 0.0, 0.0]
             twistangular = [0.0, 0.0, 0.0]
 
-            twistlinear = [min(val, +0.001) for val in twistlinear]
-            twistlinear = [max(val, -0.001) for val in twistlinear]
+            dx = wherepoint[0] - droneposition[0]
+            dy = wherepoint[1] - droneposition[1]
+            dz = wherepoint[2] - droneposition[2]
+
+            twistangular[2] = self.__rotation[1] - math.atan2(dx, dy)
+            twistangular[2] = max(min(twistangular[1], +0.1), -0.1)
+
+            twistlinear[2] = max(min(dz, 0.05), -0.05)
+
+            if abs(twistangular[2]) < 0.005:
+                twistlinear[0] = math.sqrt(dx*dx + dy*dy)
+                twistlinear[0] = max(min(twistlinear[0], 0.05), -0.05)
+
+                if max(twistlinear[0], twistlinear[2]) < 0.001:
+                    break
 
             self.settwist(twistlinear, twistangular)
+
+        return 'success'
