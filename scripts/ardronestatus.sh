@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-batterystatus=$(timeout 1s rostopic echo /ardrone/navdata | head -n 7 | tail -n 1)
+batterystatus=$(cat ~/Downloads/ardrone_battery)
 if [[ $batterystatus =~ batteryPercent:* ]]; then
     echo -n "$batterystatus"
 else

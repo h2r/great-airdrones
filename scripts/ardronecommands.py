@@ -28,6 +28,7 @@ if len(__drones__) == 0:
 __firstdrone__ = list(__drones__.values())[0]
 __thismodule = sys.modules[__name__]
 
+
 def exit():
     """Exit the prompt."""
     raise EOFError
@@ -36,6 +37,11 @@ def exit():
 def quit():
     """Quit the prompt."""
     raise EOFError
+
+
+def clear():
+    """Clear the screen."""
+    os.system('clear')
 
 
 def help(commandname):
@@ -69,13 +75,13 @@ def reset(drone=__firstdrone__):
     """Reset the drone."""
     drone.reset()
 
-
-def settwist(x, y, z, wx, wy, wz, drone=__firstdrone__):
+def settwist(x, y, z, wz, drone=__firstdrone__):
     """Set the drone twist."""
-    drone.settwist([x, y, z], [wx, wy, wz])
+    drone.settwist([x, y, z], [0, 0, wz])
 
 
 def getposition(drone=__firstdrone__):
+    """Get drone's vrpn position."""
     droneposition = drone.getposition()
     if droneposition is None:
         print("I can't get any vrpn data related to the drone")
@@ -87,7 +93,33 @@ def getposition(drone=__firstdrone__):
 
 
 def goto(x, y, z, drone=__firstdrone__):
-    """Make drone go to 3D point."""
-    result = drone.goto([x, y, z])
+    """Go to the absolute position."""
+    result = drone.goto([x, y, z], False)
+
     if result != "success":
         print(result)
+
+
+def rgoto(x, y, z, drone=__firstdrone__):
+    """Go to the relative position."""
+    result = drone.move([x, y, z], False)
+
+    if result != "success":
+        print(result)
+
+
+def tgoto(x, y, z, drone=__firstdrone__):
+    """Twist first and go to the absolute position."""
+    result = drone.goto([x, y, z], True)
+
+    if result != "success":
+        print(result)
+
+
+def trgoto(x, y, z, drone=__firstdrone__):
+    """Twist first and go to the relative position."""
+    result = drone.move([x, y, z], True)
+
+    if result != "success":
+        print(result)
+

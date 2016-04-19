@@ -16,6 +16,7 @@ from prompt_toolkit.history import FileHistory
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 
 from rospy import init_node
+init_node('great_ardrones')
 
 CURRENTPATH = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(CURRENTPATH)
@@ -24,21 +25,6 @@ import ardronecommands
 from pygments.style import Style
 from pygments.token import Token
 from pygments.styles.default import DefaultStyle
-
-
-def is_public_method(module, word):
-    """Check if the class member is public method."""
-    if word.startswith('__'):
-        return False
-
-    obj = getattr(module, word)
-    if not callable(obj):
-        return False
-
-    if isinstance(obj, ModuleType):
-        return False
-
-    return True
 
 
 def str2num(string):
@@ -62,10 +48,18 @@ def main():
 
     document_style.styles.update(DefaultStyle.styles)
 
-    init_node('great_ardrones')
+    def func(word):
+        cmd = getattr(ardronecommands, word)
+        if word.startswith('__'):
+            return False
+        if not callable(cmd):
+            return False
+        if isinstance(cmd, ModuleType):
+            return False
 
-    commands = filter(lambda word: is_public_method(ardronecommands, word), dir(ardronecommands))
-    commands = [s.replace('_', ' ') for s in commands]
+        return True
+
+    commands = list(filter(func, dir(ardronecommands)))
 
     promptargs = {
         'vi_mode':      True,
@@ -80,37 +74,48 @@ def main():
 
     while True:
         try:
-            inputtext = prompt('>>> ', **promptargs).split()
-            inputtext = [str2num(s) for s in inputtext]
+            inputline = prompt(u'>>> ', **promptargs)
 
-            if len(inputtext) == 0:
-                continue
+            for inputtext in inputline.split('&&'):
+                inputtext = [str2num(s) for s in inputtext.split()]
 
-            def prompt_error(*args, **kwargs):
-                """Print prompt incorrect command message."""
-                print('command <%s> is not supported' % inputtext[0])
+                if len(inputtext) == 0:
+                    continue
 
-            prompt_default = prompt_error
+                dronename = None
+                cmdname = inputtext[0]
+                args = inputtext[1:]
 
-            if inputtext[0] in drone_list and len(inputtext) > 1:
-                cmd = getattr(ardronecommands, inputtext[1], prompt_error)
-                prompt_default = partial(cmd, dronename=inputtext[0])
+                def prompt_error(*args, **kwargs):
+                    """Print prompt incorrect command message."""
+                    print('command <%s> is not supported' % cmdname)
 
-            command = getattr(ardronecommands, inputtext[0], prompt_default)
+                prompt_default = prompt_error
 
-            if len(inputtext) == 1:
-                command()
-            else:
-                command(*inputtext[1:])
+                if cmdname in drone_list and len(args) > 0:
+                    dronename, cmdname, args = cmdname, args[0], args[1:]
+
+                if len(args) == 0:
+                    args = ()
+
+                cmd = getattr(ardronecommands, cmdname, prompt_error)
+                prompt_default = partial(cmd, dronename=dronename)
+                getattr(ardronecommands, cmdname, prompt_default)(*args)
+
+        except KeyboardInterrupt:
+            continue
 
         except (TypeError, AttributeError):
             traceback.print_exc(file=sys.stdout)
 
-            print('%s: wrong command signature' % inputtext[0])
-            getattr(ardronecommands, 'help')(inputtext[0])
+            print('%s: wrong command signature' % cmdname)
+            getattr(ardronecommands, 'help')(cmdname)
 
-        except (EOFError, KeyboardInterrupt):
+        except EOFError:
             break
+
+    for drone in drone_list.values():
+        drone.destroy()
 
 
 if __name__ == '__main__':
