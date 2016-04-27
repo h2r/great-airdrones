@@ -25,6 +25,4 @@
   <run_depend>rospy</run_depend>
   <run_depend>std_msgs</run_depend>
   <run_depend>vrpn_client_ros</run_depend>
-
-  <run_depend>drone_twist_proxy</run_depend>
 </package>
