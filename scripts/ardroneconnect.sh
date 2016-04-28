@@ -13,6 +13,7 @@ This script connects the AR Drone to a WPA/WPA2 secured network.
 
 Usage:
      script/connect "<essid>" -p "<password>" [-a <address>] [-d <droneip>]
+     Note that order of arguments matters.
 
   <essid>
           Name of the WPA2 network to connect the drone to.

@@ -1,8 +1,8 @@
-#!/usr/bin/env bash
+#!/usr/bin/env zsh
 
-batterystatus=$(cat ~/Downloads/ardrone_battery)
+batterystatus=$(cat /tmp/ardrone_battery)
 if [[ $batterystatus =~ batteryPercent:* ]]; then
-    echo -n "$batterystatus"
+    echo "$batterystatus"
 else
-    echo -n "Ardrone disconnected"
+    echo "Ardrone disconnected"
 fi
