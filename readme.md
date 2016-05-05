@@ -6,5 +6,5 @@ map its environment.
 
 ## What we are working on
 - [x] Connecting the drone to ros/setting up wifi/using Optitrack
-- [ ] Writing code to allow the drone to fly to any position in Optitrack
-- [ ] Testing Monocular RGB Slam protocols
+- [x] Writing code to allow the drone to fly to any position in Optitrack
+- [x] Testing Monocular RGB Slam protocols
