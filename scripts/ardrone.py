@@ -23,40 +23,6 @@ def clamp(value, limit):
     return max(min(value, limit), -limit)
 
 
-# class TwistThread(threading.Thread):
-    # """Thread constantly republishing the last received twist."""
-
-    # def __init__(self):
-    #     """Constructor."""
-    #     super(TwistThread, self).__init__()
-    #     self.__twist = Twist()
-
-    #     self.daemon = True
-    #     self.__stop = False
-
-    # def stop(self):
-    #     """Set stop flag to True."""
-    #     self.__stop = True
-
-    # def resettwist(self, message):
-    #     """Set new twist for publishing."""
-    #     self.__twist = deepcopy(message)
-
-    # def run(self):
-    #     """Republish the last received twist."""
-    #     pub = rospy.Publisher('/cmd_vel', Twist, queue_size=5)
-
-    #     rate = rospy.Rate(10)
-    #     while True:
-    #         if not self.__stop:
-    #             pub.publish(self.__twist)
-    #         else:
-
-    #             break
-
-    #         rate.sleep()
-
-
 class ARDroneThread(threading.Thread):
     """ARDrone thread to run time-consuming commands."""
 
