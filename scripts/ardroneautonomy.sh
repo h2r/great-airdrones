@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-if [[ `iwgetid -r` == 'arachna' ]]; then
+if [[ `iwgetid -r` == 'ardrone2_093072' ]]; then
     if [[ -n `nmap -p 23 $1 | grep open` ]]; then
         if [[ `rostopic list | grep ardrone/front/image_raw` == "" ]]; then
             $(rosrun ardrone_autonomy ardrone_driver -ip $1 &>/dev/null) &
@@ -25,7 +25,7 @@ if [[ `iwgetid -r` == 'arachna' ]]; then
         echo "I can't ping on $1:23"
     fi
 else
-    echo "You aren't connected to arachna network"
+    echo "You aren't connected to drone network"
 fi
 
 exit 0;
