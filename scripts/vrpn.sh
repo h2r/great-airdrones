@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-if [[ `iwgetid -r` == 'arachna' ]]; then
+if [[ `iwgetid -r` == 'ardrone2_093072' ]]; then
     if [[ -n `nmap -p 3883 $1 | grep open` ]]; then
         if [[ `rostopic list | grep vrpn_client_node` != "" ]]; then
             roslaunch vrpn_client_ros sample.launch server:=$1 &>/dev/null &
