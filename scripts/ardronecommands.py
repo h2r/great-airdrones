@@ -123,3 +123,7 @@ def trgoto(x, y, z, drone=__firstdrone__):
     if result != "success":
         print(result)
 
+
+def hover(drone=__firstdrone__):
+    """Hover in place manually, not using built-in-hover"""
+    drone.hover()

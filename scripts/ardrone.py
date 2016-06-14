@@ -2,6 +2,7 @@
 # -*- coding: <utf-8> -*-
 
 """ARDrone controlling class."""
+"""ALL MOVEMENT IS DEPRECATED. WILL REWRITE"""
 
 
 from copy import deepcopy
@@ -90,7 +91,7 @@ class ARDrone:
             angles = vrpndata.pose.orientation
             self.__rotation = [3.14*angles.x, -3.14*angles.z, 3.14*angles.y]
 
-            self.__position = [-point.x, point.z, point.y]
+            self.__position = [point.x, point.y, point.z]
             self.__vrpnsequence = vrpndata.header.seq
 
             if time.clock() - self.__time_elapsed >= 0.01:
@@ -262,3 +263,11 @@ class ARDrone:
             return 'Interrupted'
 
         return self.__ardronethread.returnstatus()
+
+    def hover(self):
+        """Make the drone hover"""
+        hover_position = self.getposition()
+        while True:
+            linear_twist = [0, 0, self.getposition()[2] - hover_position[2]]
+            print(linear_twist)
+            self.settwist(linear_twist, [0, 0, 0])

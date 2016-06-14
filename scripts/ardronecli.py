@@ -5,26 +5,23 @@
 
 from functools import partial
 from types import ModuleType
-
 import traceback
 import os
 import sys
-
 from prompt_toolkit import prompt
 from prompt_toolkit.contrib.completers import WordCompleter
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
-
+from pygments.style import Style
+from pygments.token import Token
+from pygments.styles.default import DefaultStyle
+import ardronecommands
 from rospy import init_node
+
 init_node('great_ardrones')
 
 CURRENTPATH = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(CURRENTPATH)
-import ardronecommands
-
-from pygments.style import Style
-from pygments.token import Token
-from pygments.styles.default import DefaultStyle
 
 
 def str2num(string):
@@ -49,6 +46,7 @@ def main():
     document_style.styles.update(DefaultStyle.styles)
 
     def func(word):
+        """Something?"""
         cmd = getattr(ardronecommands, word)
         if word.startswith('__'):
             return False
@@ -76,6 +74,8 @@ def main():
         try:
             inputline = prompt(u'>>> ', **promptargs)
 
+            cmdname = ""
+
             for inputtext in inputline.split('&&'):
                 inputtext = [str2num(s) for s in inputtext.split()]
 
@@ -86,9 +86,9 @@ def main():
                 cmdname = inputtext[0]
                 args = inputtext[1:]
 
-                def prompt_error(*args, **kwargs):
+                def prompt_error():
                     """Print prompt incorrect command message."""
-                    print('command <%s> is not supported' % cmdname)
+                    print 'command <%s> is not supported' % cmdname
 
                 prompt_default = prompt_error
 
@@ -108,7 +108,7 @@ def main():
         except (TypeError, AttributeError):
             traceback.print_exc(file=sys.stdout)
 
-            print('%s: wrong command signature' % cmdname)
+            print '%s: wrong command signature' % cmdname
             getattr(ardronecommands, 'help')(cmdname)
 
         except EOFError:
