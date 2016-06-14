@@ -11,16 +11,18 @@ from std_msgs.msg import Empty
 
 init_node('great_ardrones')
 
-twist_publisher = Publisher('/cmd_vel', Twist, queue_size=1)
-takeoff_publisher = Publisher('/ardrone/takeoff', Empty, queue_size=1)
+TWIST_PUB = Publisher('/cmd_vel', Twist, queue_size=1)
+TAKEOFF_PUB = Publisher('/ardrone/takeoff', Empty, queue_size=1)
 
 
 prev = 0
+prev_time = 0
+
 
 def main():
     """Main program"""
 
-    takeoff_publisher.publish(Empty())
+    TAKEOFF_PUB.publish(Empty())
     Subscriber("/ardrone/navdata", Navdata, handler)
 
 
@@ -36,6 +38,7 @@ def handler(navdata):
     # PID Controlling
 
     error = 600 - navdata.altd
+    time = navdata.secs + navdata.nsecs * 1e-9
 
     kp = 0.5
     ki = 0
@@ -44,16 +47,18 @@ def handler(navdata):
 # Adding up
     p = kp * error
     i = i # Not yet done
-    d = kd * (error - prev)
+    d = kd * (error - prev) / (time - prev_time)
     message.linear.z = p + i + d
 
     print "p = %f \t i = %f \t d = %f" % p, i, d
     print message
 
-    twist_publisher.publish(message)
+    TWIST_PUB.publish(message)
 
     global prev
     prev = error
+    global prev_time
+    prev_time = time
 
 if __name__ == '__main__':
     main()
