@@ -3,21 +3,28 @@
 
 """Hovering script"""
 
+import math
+from time import sleep
 from rospy import init_node, Subscriber, spin, Publisher
 from geometry_msgs.msg import Twist, PoseStamped
-from tf.transformations import euler_from_quaternion
+from tf.transformations import euler_from_quaternion, quaternion_from_euler
+from nav_msgs.msg import Path
 
 init_node('go_to_location')
 
 TWIST_PUB = Publisher('/cmd_vel', Twist, queue_size=1)
-MARKER_PUB = Publisher('/virtual/target', PoseStamped, queue_size=100)
-POS_PUB = Publisher('/ardrone/vrpn_position', PoseStamped, queue_size=1)
+MARKER_PUB = Publisher('/virtual/target', PoseStamped, queue_size=1)
+POS_PUB = Publisher('/virtual/ardrone', PoseStamped, queue_size=1)
+PATH_PUB = Publisher('/virtual/ardrone_path', Path, queue_size=1)
 
 
-target = [1, -1, 1]
+target = [1, -1, 0.5, 0]
 
 prev_position = [0, 0, 0]
 prev_time = 0
+
+path = Path()
+path.header.frame_id = "world"
 
 
 def main():
@@ -29,9 +36,9 @@ def calc_p_control(kp, target, current):
     """Calculates p"""
     return kp * (target - current)
 
-def calc_d_control(ki, current, prev, time, prev_time):
+def calc_d_control(ki, target, current, prev, time, prev_time):
     """Calculates d"""
-    return ki * ((current - prev) / (time - prev_time))
+    return ki * (target - current) * ((current - prev) / (time - prev_time))
 
 
 def handler(vrpn):
@@ -61,6 +68,9 @@ def handler(vrpn):
     marker.pose.position.x = target[0]
     marker.pose.position.y = target[1]
     marker.pose.position.z = target[2]
+    (marker.pose.orientation.x, marker.pose.orientation.y,
+            marker.pose.orientation.z, marker.pose.orientation.w) = \
+    quaternion_from_euler(0, 0, target[3])
 
     MARKER_PUB.publish(marker)
 
@@ -76,12 +86,12 @@ def handler(vrpn):
 
     # Calc values
 
-    kpx = 0.05
-    kdx = 0.00001
-    kpy = 0.05
-    kdy = 0.00001
-    kpz = 0.3
-    kdz = 0.00001
+    kpx = 0.1
+    kdx = 0.001
+    kpy = 0.1
+    kdy = 0.001
+    kpz = 0.5
+    kdz = 0.001
     kp_rotation = 0.5
 
 
@@ -89,11 +99,11 @@ def handler(vrpn):
     py = calc_p_control(kpy, target[1], position[1])
     pz = calc_p_control(kpz, target[2], position[2])
 
-    p_rotation = calc_p_control(kp_rotation, 0, p)
+    p_rotation = calc_p_control(kp_rotation, target[3], p)
 
-    dx = calc_d_control(kdx, position[0], prev_position[0], time, prev_time)
-    dy = calc_d_control(kdy, position[1], prev_position[1], time, prev_time)
-    dz = calc_d_control(kdz, position[2], prev_position[2], time, prev_time)
+    dx = calc_d_control(kdx, target[0], position[0], prev_position[0], time, prev_time)
+    dy = calc_d_control(kdy, target[1], position[1], prev_position[1], time, prev_time)
+    dz = calc_d_control(kdz, target[2], position[2], prev_position[2], time, prev_time)
 
     print "%f\t%f\t%f\t%f\t%f\t%f" % (px, py, pz, dx, dy, dz)
 
@@ -104,6 +114,11 @@ def handler(vrpn):
 
     TWIST_PUB.publish(message)
 
+    if len(path.poses) > 100000:
+        path.poses.pop(0)
+    path.poses.append(pos_pose)
+    PATH_PUB.publish(path)
+
     global prev_position
     prev_position = position
 
@@ -112,5 +127,10 @@ def handler(vrpn):
 
 if __name__ == '__main__':
     main()
+
+    sleep(20)
+    target = [1, -1, 1.5, 0]
+    sleep(20)
+    target = [1, -1, 0.2, 0]
 
     spin()
