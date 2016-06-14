@@ -10,6 +10,8 @@ from tf.transformations import euler_from_quaternion
 init_node('go_to_location')
 
 TWIST_PUB = Publisher('/cmd_vel', Twist, queue_size=1)
+MARKER_PUB = Publisher('/virtual/target', PoseStamped, queue_size=100)
+POS_PUB = Publisher('/ardrone/vrpn_position', PoseStamped, queue_size=1)
 
 
 target = [1, -1, 1]
@@ -28,7 +30,7 @@ def calc_p_control(kp, target, current):
     return kp * (target - current)
 
 def calc_d_control(ki, current, prev, time, prev_time):
-    """Calculates i"""
+    """Calculates d"""
     return ki * ((current - prev) / (time - prev_time))
 
 
@@ -37,6 +39,31 @@ def handler(vrpn):
 
     position = [vrpn.pose.position.z, vrpn.pose.position.x,
             vrpn.pose.position.y]
+
+    (r, p, y) = euler_from_quaternion([vrpn.pose.orientation.x,
+        vrpn.pose.orientation.y, vrpn.pose.orientation.z,
+        vrpn.pose.orientation.w])
+
+    pos_pose = PoseStamped()
+    pos_pose.pose.position.x = position[0]
+    pos_pose.pose.position.y = position[1]
+    pos_pose.pose.position.z = position[2]
+    pos_pose.pose.orientation = vrpn.pose.orientation
+    pos_pose.header.stamp = vrpn.header.stamp
+    pos_pose.header.frame_id = "world"
+
+    POS_PUB.publish(pos_pose)
+
+# Updating Marker Position
+
+    marker = PoseStamped()
+    marker.header.frame_id = "world"
+    marker.pose.position.x = target[0]
+    marker.pose.position.y = target[1]
+    marker.pose.position.z = target[2]
+
+    MARKER_PUB.publish(marker)
+
 
     time = vrpn.header.stamp.secs + vrpn.header.stamp.nsecs * 1e-9
 
@@ -50,35 +77,30 @@ def handler(vrpn):
     # Calc values
 
     kpx = 0.05
-    kix = 0.00
+    kdx = 0.00001
     kpy = 0.05
-    kiy = 0.00
-    kpz = 0.05
-    kiz = 0.00
-    kp_rotation = 1
-
-    (r, p, y) = euler_from_quaternion([vrpn.pose.orientation.x,
-        vrpn.pose.orientation.y, vrpn.pose.orientation.z,
-        vrpn.pose.orientation.w])
-
-    print "%f\t %f\t %f" % (r, p, y)
-
-    message.linear.x = calc_p_control(kpx, target[0], position[0]) + \
-        calc_d_control(kix, position[0], prev_position[0], time, prev_time)
-    message.linear.y = calc_p_control(kpy, target[1], position[1]) + \
-        calc_d_control(kiy, position[1], prev_position[1], time, prev_time)
-    message.linear.z = calc_p_control(kpz, target[2], position[2]) + \
-        calc_d_control(kiz, position[2], prev_position[2], time, prev_time)
-    message.angular.z = calc_p_control(kp_rotation, 0, p)
+    kdy = 0.00001
+    kpz = 0.3
+    kdz = 0.00001
+    kp_rotation = 0.5
 
 
+    px = calc_p_control(kpx, target[0], position[0])
+    py = calc_p_control(kpy, target[1], position[1])
+    pz = calc_p_control(kpz, target[2], position[2])
 
-    print "###############################################"
-    print "Position\t" + str(position)
-    print "###############################################"
-    print "Target\t" + str(target) + "\t" + str(p)
-    print "###############################################"
-    print message
+    p_rotation = calc_p_control(kp_rotation, 0, p)
+
+    dx = calc_d_control(kdx, position[0], prev_position[0], time, prev_time)
+    dy = calc_d_control(kdy, position[1], prev_position[1], time, prev_time)
+    dz = calc_d_control(kdz, position[2], prev_position[2], time, prev_time)
+
+    print "%f\t%f\t%f\t%f\t%f\t%f" % (px, py, pz, dx, dy, dz)
+
+    message.linear.x = px + dx
+    message.linear.y = py + dy
+    message.linear.z = pz + dz
+    message.angular.z = p_rotation
 
     TWIST_PUB.publish(message)
 
