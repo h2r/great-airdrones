@@ -131,6 +131,7 @@ class ARDrone:
     def takeoff(self):
         """Take the drone off."""
         self.__status = 'flying'
+        self.settwist([0, 0, 0], [0, 0, 0])
         self.__takeoff.publish(Empty())
 
     def land(self):

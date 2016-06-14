@@ -5,6 +5,7 @@
 
 from rospy import init_node, Subscriber, spin, Publisher
 from geometry_msgs.msg import Twist, PoseStamped
+from tf.transformations import euler_from_quaternion
 
 init_node('go_to_location')
 
@@ -42,17 +43,25 @@ def handler(vrpn):
     kpx = 0.05
     kpy = 0.05
     kpz = 0.3
+    kp_rotation = 1
 
-#    message.linear.x = calc_p_control(kpx, target[0], position[0])
+    (r, p, y) = euler_from_quaternion([vrpn.pose.orientation.x,
+        vrpn.pose.orientation.y, vrpn.pose.orientation.z,
+        vrpn.pose.orientation.w])
+
+    print "%f\t %f\t %f" % (r, p, y)
+
+    message.linear.x = calc_p_control(kpx, target[0], position[0])
     message.linear.y = calc_p_control(kpy, target[1], position[1])
     message.linear.z = calc_p_control(kpz, target[2], position[2])
+    message.angular.z = calc_p_control(kp_rotation, 0, p)
 
 
 
     print "###############################################"
     print "Position\t" + str(position)
     print "###############################################"
-    print "Target\t" + str(target)
+    print "Target\t" + str(target) + "\t" + str(p)
     print "###############################################"
     print message
 
