@@ -38,7 +38,7 @@ def handler(navdata):
     # PID Controlling
 
     error = 600 - navdata.altd
-    time = navdata.secs + navdata.nsecs * 1e-9
+    time = navdata.header.stamp.secs + navdata.header.stamp.nsecs * 1e-9
 
     kp = 0.5
     ki = 0
@@ -46,11 +46,15 @@ def handler(navdata):
 
 # Adding up
     p = kp * error
-    i = i # Not yet done
+    i = ki # Not yet done
     d = kd * (error - prev) / (time - prev_time)
     message.linear.z = p + i + d
 
-    print "p = %f \t i = %f \t d = %f" % p, i, d
+    print "###############################################"
+    print navdata.altd
+    print "###############################################"
+    print "p = %f \t i = %f \t d = %f" % (p, i, d)
+    print "###############################################"
     print message
 
     TWIST_PUB.publish(message)
