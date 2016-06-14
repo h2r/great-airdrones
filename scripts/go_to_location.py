@@ -14,6 +14,9 @@ TWIST_PUB = Publisher('/cmd_vel', Twist, queue_size=1)
 
 target = [1, -1, 1]
 
+prev_position = [0, 0, 0]
+prev_time = 0
+
 
 def main():
     """Main program"""
@@ -24,12 +27,18 @@ def calc_p_control(kp, target, current):
     """Calculates p"""
     return kp * (target - current)
 
+def calc_d_control(ki, current, prev, time, prev_time):
+    """Calculates i"""
+    return ki * ((current - prev) / (time - prev_time))
+
 
 def handler(vrpn):
     """Handles the vrpn input"""
 
     position = [vrpn.pose.position.z, vrpn.pose.position.x,
             vrpn.pose.position.y]
+
+    time = vrpn.header.stamp.secs + vrpn.header.stamp.nsecs * 1e-9
 
     message = Twist()
 
@@ -41,8 +50,11 @@ def handler(vrpn):
     # Calc values
 
     kpx = 0.05
+    kix = 0.00
     kpy = 0.05
-    kpz = 0.3
+    kiy = 0.00
+    kpz = 0.05
+    kiz = 0.00
     kp_rotation = 1
 
     (r, p, y) = euler_from_quaternion([vrpn.pose.orientation.x,
@@ -51,9 +63,12 @@ def handler(vrpn):
 
     print "%f\t %f\t %f" % (r, p, y)
 
-    message.linear.x = calc_p_control(kpx, target[0], position[0])
-    message.linear.y = calc_p_control(kpy, target[1], position[1])
-    message.linear.z = calc_p_control(kpz, target[2], position[2])
+    message.linear.x = calc_p_control(kpx, target[0], position[0]) + \
+        calc_d_control(kix, position[0], prev_position[0], time, prev_time)
+    message.linear.y = calc_p_control(kpy, target[1], position[1]) + \
+        calc_d_control(kiy, position[1], prev_position[1], time, prev_time)
+    message.linear.z = calc_p_control(kpz, target[2], position[2]) + \
+        calc_d_control(kiz, position[2], prev_position[2], time, prev_time)
     message.angular.z = calc_p_control(kp_rotation, 0, p)
 
 
@@ -66,6 +81,12 @@ def handler(vrpn):
     print message
 
     TWIST_PUB.publish(message)
+
+    global prev_position
+    prev_position = position
+
+    global prev_time
+    prev_time = time
 
 if __name__ == '__main__':
     main()
