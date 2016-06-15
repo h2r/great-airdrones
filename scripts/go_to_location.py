@@ -29,13 +29,13 @@ num_observations = 0
 sum_observations = [0, 0, 0]
 square_observations = [0, 0, 0]
 
-kpx = 0.0
+kpx = 0.1
 kix = 0.0000000000
-kdx = -1
+kdx = -0.25
 
-kpy = 0.0
+kpy = 0.1
 kiy = 0.0000000000
-kdy = -1
+kdy = -0.25
 
 kpz = 0.5
 kiz = 0.000000000000
@@ -82,8 +82,8 @@ def calc_i_control(ki, target, axis):
 
 def calc_d_control(kd, target, current, prev, time, prev_time, axis):
     """Calculates d"""
-    coef1 = 0.95
-    coef0 = 0.97
+    coef1 = 0.9
+    coef0 = 0.925
 
     # print str(a0) + "\tFIRST"
 
