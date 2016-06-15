@@ -234,15 +234,22 @@ def handler(vrpn):
 if __name__ == '__main__':
     main()
 
-    sleep(30)
+    sleep(10)
+    target = [1.5, -1.5, 1, 0]
 
-    mean = [sum_observations[0] / num_observations,
-            sum_observations[1] / num_observations,
-            sum_observations[2] / num_observations]
+    sleep(10)
+    target = [1, -1.5, 1.5, 0]
 
-    square = [square_observations[0] / num_observations,
-            square_observations[1] / num_observations,
-            square_observations[2] / num_observations]
+    sleep(10)
+    target = [1.5, -1.5, 0.2, 0]
+
+    # mean = [sum_observations[0] / num_observations,
+    #         sum_observations[1] / num_observations,
+    #         sum_observations[2] / num_observations]
+
+    # square = [square_observations[0] / num_observations,
+    #         square_observations[1] / num_observations,
+    #         square_observations[2] / num_observations]
 
     # print [mean[0] ** 2 - square[0],
     #         mean[1] ** 2 - square[1],
