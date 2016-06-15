@@ -29,12 +29,18 @@ num_observations = 0
 sum_observations = [0, 0, 0]
 square_observations = [0, 0, 0]
 
-kpx = 10
-kdx = 10
-kpy = 10
-kdy = 10
+kpx = 0.1
+kix = 0.0000000000
+kdx = 00
+
+kpy = 0.1
+kiy = 0.0000000000
+kdy = 00
+
 kpz = 0.5
+kiz = 0.000000000000
 kdz = 0.000
+
 kp_rotation = 0.5
 
 
@@ -47,7 +53,21 @@ def calc_p_control(kp, target, current):
     """Calculates p"""
     return kp * (target - current)
 
-# def calc_i_control(ki, )
+def calc_i_control(ki, target, axis):
+    prev_time = 0
+    val = 0
+    for pose in path.poses:
+        time = pose.header.stamp.to_sec()
+        if axis == "x":
+            pos = pose.pose.position.x
+        if axis == "y":
+            pos = pose.pose.position.y
+        if axis == "z":
+            pos = pose.pose.position.z
+        val += (time - prev_time) * (target - pos)
+    return ki * val
+
+
 
 def calc_d_control(kd, target, current, prev, time, prev_time):
     """Calculates d"""
@@ -128,11 +148,15 @@ def handler(vrpn):
     dy = calc_d_control(kdy, target[1], position[1], prev_position[1], time, prev_time)
     dz = calc_d_control(kdz, target[2], position[2], prev_position[2], time, prev_time)
 
-    print "%f\t%f\t%f\t%f\t%f\t%f" % (px, py, pz, dx, dy, dz)
+    ix = calc_i_control(kix, target[0], "x")
+    iy = calc_i_control(kiy, target[1], "y")
+    iz = calc_i_control(kiz, target[2], "z")
 
-    message.linear.x = px + dx
-    message.linear.y = py + dy
-    message.linear.z = pz + dz
+    print "%f\t%f\t%f\t%f\t%f\t%f" % (px, py, pz, ix, iy, iz)
+
+    message.linear.x = px + ix + dx
+    message.linear.y = py + iy + dy
+    message.linear.z = pz + iz + dz
     message.angular.z = p_rotation
 
     now = Time.now()
