@@ -29,25 +29,36 @@ num_observations = 0
 sum_observations = [0, 0, 0]
 square_observations = [0, 0, 0]
 
-kpx = 0.1
+kpx = 0.0
 kix = 0.0000000000
-kdx = 00
+kdx = -1
 
-kpy = 0.1
+kpy = 0.0
 kiy = 0.0000000000
-kdy = 00
+kdy = -1
 
 kpz = 0.5
 kiz = 0.000000000000
-kdz = 0.000
+kdz = 0
 
 kp_rotation = 0.5
+
+
+# Variables for d calculations
+
+first_d = [True, True, True]
+
+a1 = [None, None, None]
+a0 = [None, None, None]
+t1 = [None, None, None]
+t0 = [None, None, None]
 
 
 def main():
     """Main program"""
 
-    Subscriber("/vrpn_client_node/ardrone/pose", PoseStamped, handler)
+    Subscriber("/vrpn_client_node/ardrone/pose", PoseStamped, handler,
+            queue_size=1)
 
 def calc_p_control(kp, target, current):
     """Calculates p"""
@@ -69,9 +80,47 @@ def calc_i_control(ki, target, axis):
 
 
 
-def calc_d_control(kd, target, current, prev, time, prev_time):
+def calc_d_control(kd, target, current, prev, time, prev_time, axis):
     """Calculates d"""
-    return kd * (target - current) * ((current - prev) / (time - prev_time))
+    coef1 = 0.95
+    coef0 = 0.97
+
+    # print str(a0) + "\tFIRST"
+
+    if first_d[axis]:
+        global a1
+        a1[axis] = current
+        global a0
+        a0[axis] = current
+        global t0
+        t0[axis] = time
+        global t1
+        t1[axis] = time
+
+        global first_d
+        first_d[axis] = False
+
+    else:
+        global a1
+        a1[axis] = coef1 * a1[axis] + (1.0 - coef1) * current
+
+        global a0
+        a0[axis] = coef0 * a0[axis] + (1.0 - coef0) * current
+
+        global t1
+        t1[axis] = coef1 * t1[axis] + (1.0 - coef1) * time
+
+        global t0
+        t0[axis] = coef0 * t0[axis] + (1.0 - coef0) * time
+
+
+    # print str(a0) + "\tSECOND"
+    # print str(time - t1) + "\t" + str(time - t0)
+    # print sign + "\t" + str(abs(a1)) + "\t" + \
+    numerator = a1[axis] - a0[axis]
+    denominator = t1[axis] - t0[axis]
+    # print str(numerator) + "\t" + str(denominator)
+    return kd * numerator / denominator
 
 
 
@@ -144,19 +193,24 @@ def handler(vrpn):
 
     p_rotation = calc_p_control(kp_rotation, target[3], p)
 
-    dx = calc_d_control(kdx, target[0], position[0], prev_position[0], time, prev_time)
-    dy = calc_d_control(kdy, target[1], position[1], prev_position[1], time, prev_time)
-    dz = calc_d_control(kdz, target[2], position[2], prev_position[2], time, prev_time)
+    dx = calc_d_control(kdx, target[0], position[0], prev_position[0], time,
+            prev_time, 0)
+    dy = calc_d_control(kdy, target[1], position[1], prev_position[1], time,
+            prev_time, 1)
+    dz = calc_d_control(kdz, target[2], position[2], prev_position[2], time,
+            prev_time, 2)
 
     ix = calc_i_control(kix, target[0], "x")
     iy = calc_i_control(kiy, target[1], "y")
     iz = calc_i_control(kiz, target[2], "z")
 
-    print "%f\t%f\t%f\t%f\t%f\t%f" % (px, py, pz, ix, iy, iz)
+
+    print "%f\t%f\t%f\t%f\t%f\t%f" % (px, py, pz, dx, dy, dz)
+    # print "%f\t%f" % (dx, dy)
 
     message.linear.x = px + ix + dx
     message.linear.y = py + iy + dy
-    message.linear.z = pz + iz + dz
+    message.linear.z = pz
     message.angular.z = p_rotation
 
     now = Time.now()
@@ -190,8 +244,8 @@ if __name__ == '__main__':
             square_observations[1] / num_observations,
             square_observations[2] / num_observations]
 
-    print [mean[0] ** 2 - square[0],
-            mean[1] ** 2 - square[1],
-            mean[2] ** 2 - square[2]]
+    # print [mean[0] ** 2 - square[0],
+    #         mean[1] ** 2 - square[1],
+    #         mean[2] ** 2 - square[2]]
 
     spin()
