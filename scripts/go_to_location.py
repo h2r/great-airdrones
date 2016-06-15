@@ -3,9 +3,8 @@
 
 """Hovering script"""
 
-import math
 from time import sleep
-from rospy import init_node, Subscriber, spin, Publisher
+from rospy import init_node, Subscriber, spin, Publisher, Time
 from geometry_msgs.msg import Twist, PoseStamped
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 from nav_msgs.msg import Path
@@ -18,13 +17,25 @@ POS_PUB = Publisher('/virtual/ardrone', PoseStamped, queue_size=1)
 PATH_PUB = Publisher('/virtual/ardrone_path', Path, queue_size=1)
 
 
-target = [1, -1, 0.5, 0]
+target = [0.955, -0.959, 1, 0]
 
 prev_position = [0, 0, 0]
 prev_time = 0
 
 path = Path()
 path.header.frame_id = "world"
+
+num_observations = 0
+sum_observations = [0, 0, 0]
+square_observations = [0, 0, 0]
+
+kpx = 10
+kdx = 10
+kpy = 10
+kdy = 10
+kpz = 0.5
+kdz = 0.000
+kp_rotation = 0.5
 
 
 def main():
@@ -36,13 +47,18 @@ def calc_p_control(kp, target, current):
     """Calculates p"""
     return kp * (target - current)
 
-def calc_d_control(ki, target, current, prev, time, prev_time):
+# def calc_i_control(ki, )
+
+def calc_d_control(kd, target, current, prev, time, prev_time):
     """Calculates d"""
-    return ki * (target - current) * ((current - prev) / (time - prev_time))
+    return kd * (target - current) * ((current - prev) / (time - prev_time))
+
 
 
 def handler(vrpn):
     """Handles the vrpn input"""
+
+    startTime = vrpn.header.stamp.to_sec()
 
     position = [vrpn.pose.position.z, vrpn.pose.position.x,
             vrpn.pose.position.y]
@@ -61,6 +77,20 @@ def handler(vrpn):
 
     POS_PUB.publish(pos_pose)
 
+    global num_observations
+    num_observations += 1
+
+    global sum_observations
+    sum_observations[0] = target[0] - position[0]
+    sum_observations[1] = target[1] - position[1]
+    sum_observations[2] = target[2] - position[2]
+
+    global square_observations
+    square_observations[0] += (target[0] - position[0]) ** 2
+    square_observations[1] += (target[1] - position[1]) ** 2
+    square_observations[2] += (target[2] - position[2]) ** 2
+
+
 # Updating Marker Position
 
     marker = PoseStamped()
@@ -75,7 +105,7 @@ def handler(vrpn):
     MARKER_PUB.publish(marker)
 
 
-    time = vrpn.header.stamp.secs + vrpn.header.stamp.nsecs * 1e-9
+    time = vrpn.header.stamp.to_sec()
 
     message = Twist()
 
@@ -86,13 +116,6 @@ def handler(vrpn):
 
     # Calc values
 
-    kpx = 0.1
-    kdx = 0.001
-    kpy = 0.1
-    kdy = 0.001
-    kpz = 0.5
-    kdz = 0.001
-    kp_rotation = 0.5
 
 
     px = calc_p_control(kpx, target[0], position[0])
@@ -112,7 +135,11 @@ def handler(vrpn):
     message.linear.z = pz + dz
     message.angular.z = p_rotation
 
+    now = Time.now()
+    # print now.to_sec() - startTime
     TWIST_PUB.publish(message)
+    now = Time.now()
+    # print now.to_sec() - startTime
 
     if len(path.poses) > 100000:
         path.poses.pop(0)
@@ -125,12 +152,22 @@ def handler(vrpn):
     global prev_time
     prev_time = time
 
+
 if __name__ == '__main__':
     main()
 
-    sleep(20)
-    target = [1, -1, 1.5, 0]
-    sleep(20)
-    target = [1, -1, 0.2, 0]
+    sleep(30)
+
+    mean = [sum_observations[0] / num_observations,
+            sum_observations[1] / num_observations,
+            sum_observations[2] / num_observations]
+
+    square = [square_observations[0] / num_observations,
+            square_observations[1] / num_observations,
+            square_observations[2] / num_observations]
+
+    print [mean[0] ** 2 - square[0],
+            mean[1] ** 2 - square[1],
+            mean[2] ** 2 - square[2]]
 
     spin()
