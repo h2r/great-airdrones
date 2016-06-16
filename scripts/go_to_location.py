@@ -3,7 +3,7 @@
 
 """Hovering script"""
 
-from math import sin, cos, pi, atan2
+from math import sin, cos, pi, atan2, sqrt
 from time import sleep
 from rospy import init_node, Subscriber, spin, Publisher, Time
 from geometry_msgs.msg import Twist, PoseStamped
@@ -224,23 +224,31 @@ def handler(vrpn):
     iz = calc_i_control(kiz, target[2], "z")
 
 
-    global_goto_quat = [px + ix + dx, py + iy + dy, 0, 0]
+    final_x = px + ix + dx
+    final_y = py + iy + dy
+    norm = sqrt(final_x ** 2 + final_y ** 2)
+
+    global_goto_quat = [final_x / norm, final_y / norm, 0, 0]
+
 
     # print global_goto_quat
 
     drone_goto_quat = quaternion_multiply(quaternion_multiply(current_rotation,
         global_goto_quat), quaternion_inverse(current_rotation))
 
+    new_norm = sqrt(drone_goto_quat[0] ** 2 + drone_goto_quat[1] ** 2)
+
     # Calculating quaternion transition
 
-    message.linear.x = drone_goto_quat[0]
-    message.linear.y = drone_goto_quat[1]
+    message.linear.x = drone_goto_quat[0] / new_norm * norm
+    message.linear.y = drone_goto_quat[1] / new_norm * norm
     message.linear.z = pz
     message.angular.z = 0
 
     # print message.angular.z
 
-    print str(message.linear.x) + "\t" + str(message.linear.y)
+    print str(final_x) + "\t" + str(final_y) + "\tINITIAL"
+    print str(message.linear.x) + "\t" + str(message.linear.y) + "\tFINAL"
 
 
     now = Time.now()
