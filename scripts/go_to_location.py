@@ -3,10 +3,12 @@
 
 """Hovering script"""
 
+from math import sin, cos, pi
 from time import sleep
 from rospy import init_node, Subscriber, spin, Publisher, Time
 from geometry_msgs.msg import Twist, PoseStamped
-from tf.transformations import euler_from_quaternion, quaternion_from_euler
+from tf.transformations import euler_from_quaternion, quaternion_from_euler, \
+quaternion_slerp, quaternion_inverse, quaternion_multiply
 from nav_msgs.msg import Path
 
 init_node('go_to_location')
@@ -17,7 +19,7 @@ POS_PUB = Publisher('/virtual/ardrone', PoseStamped, queue_size=1)
 PATH_PUB = Publisher('/virtual/ardrone_path', Path, queue_size=1)
 
 
-target = [0.955, -0.959, 1, 0]
+target = [-0.617, -0.404, 1, pi/2]
 
 prev_position = [0, 0, 0]
 prev_time = 0
@@ -41,7 +43,7 @@ kpz = 0.5
 kiz = 0.000000000000
 kdz = 0
 
-kp_rotation = 0.5
+kp_rotation = 0.6
 
 
 # Variables for d calculations
@@ -59,6 +61,14 @@ def main():
 
     Subscriber("/vrpn_client_node/ardrone/pose", PoseStamped, handler,
             queue_size=1)
+
+def calc_p_control_angle(beta, target, current):
+    """Calculates p for the angle"""
+    qi = quaternion_slerp(current, target, beta)
+    a = quaternion_multiply(quaternion_inverse(current), qi)
+    (r, p, y) = euler_from_quaternion(a)
+
+    return r
 
 def calc_p_control(kp, target, current):
     """Calculates p"""
@@ -84,8 +94,6 @@ def calc_d_control(kd, target, current, prev, time, prev_time, axis):
     """Calculates d"""
     coef1 = 0.9
     coef0 = 0.925
-
-    # print str(a0) + "\tFIRST"
 
     if first_d[axis]:
         global a1
@@ -114,12 +122,8 @@ def calc_d_control(kd, target, current, prev, time, prev_time, axis):
         t0[axis] = coef0 * t0[axis] + (1.0 - coef0) * time
 
 
-    # print str(a0) + "\tSECOND"
-    # print str(time - t1) + "\t" + str(time - t0)
-    # print sign + "\t" + str(abs(a1)) + "\t" + \
     numerator = a1[axis] - a0[axis]
     denominator = t1[axis] - t0[axis]
-    # print str(numerator) + "\t" + str(denominator)
     return kd * numerator / denominator
 
 
@@ -131,10 +135,6 @@ def handler(vrpn):
 
     position = [vrpn.pose.position.z, vrpn.pose.position.x,
             vrpn.pose.position.y]
-
-    (r, p, y) = euler_from_quaternion([vrpn.pose.orientation.x,
-        vrpn.pose.orientation.y, vrpn.pose.orientation.z,
-        vrpn.pose.orientation.w])
 
     pos_pose = PoseStamped()
     pos_pose.pose.position.x = position[0]
@@ -169,7 +169,7 @@ def handler(vrpn):
     marker.pose.position.z = target[2]
     (marker.pose.orientation.x, marker.pose.orientation.y,
             marker.pose.orientation.z, marker.pose.orientation.w) = \
-    quaternion_from_euler(0, 0, target[3])
+    quaternion_from_euler(0, target[3], 0)
 
     MARKER_PUB.publish(marker)
 
@@ -191,7 +191,15 @@ def handler(vrpn):
     py = calc_p_control(kpy, target[1], position[1])
     pz = calc_p_control(kpz, target[2], position[2])
 
-    p_rotation = calc_p_control(kp_rotation, target[3], p)
+    current_rotation = [vrpn.pose.orientation.x,
+                vrpn.pose.orientation.y, vrpn.pose.orientation.z,
+                vrpn.pose.orientation.w]
+
+    # target_rotation = [0.0086, -0.73, -0.031, 0.67]
+    target_rotation = [0.0, 1.0, 0.0, 0.0]
+
+    p_rotation = calc_p_control_angle(kp_rotation,
+            target_rotation, current_rotation)
 
     dx = calc_d_control(kdx, target[0], position[0], prev_position[0], time,
             prev_time, 0)
@@ -205,13 +213,19 @@ def handler(vrpn):
     iz = calc_i_control(kiz, target[2], "z")
 
 
-    print "%f\t%f\t%f\t%f\t%f\t%f" % (px, py, pz, dx, dy, dz)
-    # print "%f\t%f" % (dx, dy)
+    # print "%f\t%f\t%f\t%f\t%f\t%f" % (px, py, pz, dx, dy, dz)
+    # print position
 
-    message.linear.x = px + ix + dx
-    message.linear.y = py + iy + dy
+    final_x = px + ix + dx
+    final_y = py + iy + dy
+
+    message.linear.x = cos(p_rotation) * final_x - sin(p_rotation) * final_y * 0
+    message.linear.y = cos(p_rotation) * final_y - sin(p_rotation) * final_x + 0
     message.linear.z = pz
     message.angular.z = p_rotation
+
+    # print current_rotation
+    print message.angular.z
 
     now = Time.now()
     # print now.to_sec() - startTime
@@ -233,26 +247,5 @@ def handler(vrpn):
 
 if __name__ == '__main__':
     main()
-
-    sleep(10)
-    target = [1.5, -1.5, 1, 0]
-
-    sleep(10)
-    target = [1, -1.5, 1.5, 0]
-
-    sleep(10)
-    target = [1.5, -1.5, 0.2, 0]
-
-    # mean = [sum_observations[0] / num_observations,
-    #         sum_observations[1] / num_observations,
-    #         sum_observations[2] / num_observations]
-
-    # square = [square_observations[0] / num_observations,
-    #         square_observations[1] / num_observations,
-    #         square_observations[2] / num_observations]
-
-    # print [mean[0] ** 2 - square[0],
-    #         mean[1] ** 2 - square[1],
-    #         mean[2] ** 2 - square[2]]
 
     spin()
