@@ -263,7 +263,7 @@ def handler(vrpn):
     message.linear.x = drone_goto[0] / new_norm * norm
     message.linear.y = drone_goto[1] / new_norm * norm
     message.linear.z = pz
-    message.angular.z = p_rotation * 0
+    message.angular.z = p_rotation
 
     # print str(global_goto_quat) + "\t" + "GLOBAL"
     # print str(intermediate_quat) + "\t" + "INTER"
