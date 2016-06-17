@@ -43,7 +43,7 @@ kpz = 0.5
 kiz = 0
 kdz = 0
 
-kp_rotation = 1
+kp_rotation = 0.2
 
 
 # Variables for d calculations
@@ -78,8 +78,8 @@ def calc_offset_angle(current):
     a = quaternion_multiply(x_axis, quaternion_inverse(current))
     rotation = quaternion_multiply(quaternion_multiply(a, x_axis), quaternion_inverse(a))
     angle = atan2(rotation[1], rotation[0])
-    if angle < 0:
-        angle += 2 * pi
+    # if angle < 0:
+    #     angle += 2 * pi
 
     return angle
 
@@ -93,12 +93,13 @@ def calc_p_control_angle(beta, target, current):
                                 quaternion_inverse(a))
     # print rotation
     angle = atan2(rotation[1], rotation[0])
-    if abs(angle) < 0.05:
+    if abs(angle) < 0.10:
         angle = 0
-    # if abs(angle/pi) > 0.5:
-    #     angle = abs(angle)
-    # if angle < 0:
-    #     angle += 2 * pi
+    if angle < 0:
+        angle += 2 * pi
+    # if angle < pi:
+    #     angle *= -1
+    print angle / pi
     after_p = calc_p_control(beta, 0, angle)
     return after_p
 
@@ -253,7 +254,7 @@ def handler(vrpn):
     message.linear.z = rot_p[2] + rot_i[2] + rot_d[2]
     message.angular.z = rot_p[3] + rot_i[3] + rot_d[3]
 
-    print "%f\t%f\t%f\t%f\t%f\t%f" % (p[0], p[1], d[0], d[1], p[2], d[2])
+    # print "%f\t%f\t%f\t%f\t%f" % (p[0], p[1], d[0], d[1], p[3])
 
     # print message.angular.z
 
@@ -296,5 +297,10 @@ def wand_handler(vrpn):
 
 if __name__ == '__main__':
     main()
+
+    sleep(10)
+    target_rotation = [0, 0, 0.5, 0.5]
+    sleep(10)
+    target_rotation = [0, 0, 0.5, 0.5]
 
     spin()
