@@ -3,12 +3,11 @@
 
 """Hovering script"""
 
-from math import sin, cos, pi, atan2, sqrt
+from math import sin, cos, pi, atan2
 from time import sleep
 from rospy import init_node, Subscriber, spin, Publisher, Time
 from geometry_msgs.msg import Twist, PoseStamped
-from tf.transformations import euler_from_quaternion, quaternion_from_euler, \
-quaternion_slerp, quaternion_inverse, quaternion_multiply
+from tf.transformations import quaternion_inverse, quaternion_multiply
 from nav_msgs.msg import Path
 
 init_node('go_to_location')
@@ -19,8 +18,8 @@ POS_PUB = Publisher('/virtual/ardrone', PoseStamped, queue_size=1)
 PATH_PUB = Publisher('/virtual/ardrone_path', Path, queue_size=1)
 
 
-target = [-0.617, -0.404, 1, 0]
-target_rotation = [0, 0, 0.5, 0.5]
+target = [-0.617, -0.404, 1]
+target_rotation = [0, 1, 0, 0]
 
 prev_position = [0, 0, 0]
 prev_time = 0
@@ -32,19 +31,19 @@ num_observations = 0
 sum_observations = [0, 0, 0]
 square_observations = [0, 0, 0]
 
-kpx = 0.1
-kix = 0.0000000000
-kdx = -0.25
+kpx = 0.3
+kix = 0
+kdx = -0.3
 
-kpy = 0.1
-kiy = 0.0000000000
-kdy = -0.25
+kpy = 0.3
+kiy = 0
+kdy = -0.3
 
 kpz = 0.5
-kiz = 0.000000000000
+kiz = 0
 kdz = 0
 
-kp_rotation = -0.1
+kp_rotation = 1
 
 
 # Variables for d calculations
@@ -63,6 +62,15 @@ def main():
     Subscriber("/vrpn_client_node/ardrone/pose", PoseStamped, handler,
             queue_size=1)
 
+    Subscriber("/vrpn_client_node/wand/pose", PoseStamped, wand_handler,
+            queue_size=1)
+
+def global_to_drone_coordinates(mat, angle):
+    """Converts from global to drone coordinates"""
+    return [cos(angle) * mat[0] + sin(angle) * mat[1],
+            cos(angle) * mat[1] - sin(angle) * mat[0], mat[2], mat[3]]
+
+
 def calc_offset_angle(current):
     """Calculates the offset angle from the x axis positiion"""
 
@@ -70,8 +78,6 @@ def calc_offset_angle(current):
     a = quaternion_multiply(x_axis, quaternion_inverse(current))
     rotation = quaternion_multiply(quaternion_multiply(a, x_axis), quaternion_inverse(a))
     angle = atan2(rotation[1], rotation[0])
-    if abs(angle) < 0.1:
-        angle = 0
     if angle < 0:
         angle += 2 * pi
 
@@ -81,20 +87,19 @@ def calc_offset_angle(current):
 def calc_p_control_angle(beta, target, current):
     """Calculates p for the angle"""
 
-    # print target
-    # print current
-
     x_axis = [1, 0, 0, 0]
     a = quaternion_multiply(target, quaternion_inverse(current))
-    rotation = quaternion_multiply(quaternion_multiply(a, x_axis), quaternion_inverse(a))
+    rotation = quaternion_multiply(quaternion_multiply(a, x_axis),
+                                quaternion_inverse(a))
     # print rotation
     angle = atan2(rotation[1], rotation[0])
-    if abs(angle) < 0.1:
+    if abs(angle) < 0.05:
         angle = 0
-    if angle < 0:
-        angle += 2 * pi
+    # if abs(angle/pi) > 0.5:
+    #     angle = abs(angle)
+    # if angle < 0:
+    #     angle += 2 * pi
     after_p = calc_p_control(beta, 0, angle)
-    # print str(angle/pi) + "\t" + str(after_p)
     return after_p
 
 
@@ -163,11 +168,18 @@ def handler(vrpn):
     position = [vrpn.pose.position.z, vrpn.pose.position.x,
             vrpn.pose.position.y]
 
+    current_rotation = [vrpn.pose.orientation.z,
+                -vrpn.pose.orientation.x, vrpn.pose.orientation.y,
+                vrpn.pose.orientation.w]
+
     pos_pose = PoseStamped()
     pos_pose.pose.position.x = position[0]
     pos_pose.pose.position.y = position[1]
     pos_pose.pose.position.z = position[2]
-    pos_pose.pose.orientation = vrpn.pose.orientation
+    pos_pose.pose.orientation.x = current_rotation[0]
+    pos_pose.pose.orientation.y = current_rotation[1]
+    pos_pose.pose.orientation.z = current_rotation[2]
+    pos_pose.pose.orientation.w = current_rotation[3]
     pos_pose.header.stamp = vrpn.header.stamp
     pos_pose.header.frame_id = "world"
 
@@ -213,63 +225,35 @@ def handler(vrpn):
 
     # Calc values
 
-    px = calc_p_control(kpx, target[0], position[0])
-    py = calc_p_control(kpy, target[1], position[1])
-    pz = calc_p_control(kpz, target[2], position[2])
-
-    unrotated = [0, 0, 0, 1]
-
-    current_rotation = [vrpn.pose.orientation.z,
-                -vrpn.pose.orientation.x, vrpn.pose.orientation.y,
-                vrpn.pose.orientation.w]
-
-    # target_rotation = [0.0086, -0.73, -0.031, 0.67]
-
-    p_rotation = calc_p_control_angle(kp_rotation, target_rotation, current_rotation)
-
-    dx = calc_d_control(kdx, target[0], position[0], prev_position[0], time,
-            prev_time, 0)
-    dy = calc_d_control(kdy, target[1], position[1], prev_position[1], time,
-            prev_time, 1)
-    dz = calc_d_control(kdz, target[2], position[2], prev_position[2], time,
-            prev_time, 2)
-
-    ix = calc_i_control(kix, target[0], "x")
-    iy = calc_i_control(kiy, target[1], "y")
-    iz = calc_i_control(kiz, target[2], "z")
 
 
-    final_x = px + ix + dx
-    final_y = py + iy + dy
-    norm = sqrt(final_x ** 2 + final_y ** 2)
+# x, y, z, rotation
+    p = [calc_p_control(kpx, target[0], position[0]),
+            calc_p_control(kpy, target[1], position[1]),
+            calc_p_control(kpz, target[2], position[2]),
+            calc_p_control_angle(kp_rotation, target_rotation, current_rotation)]
 
-    global_goto_quat = [final_x / norm, final_y / norm, 0, 0]
+    i = [0, 0, 0, 0]
 
-    drone_goto_quat = quaternion_multiply(quaternion_multiply(current_rotation,
-        global_goto_quat), quaternion_inverse(current_rotation))
-
-    # new_norm = sqrt(drone_goto_quat[0] ** 2 + drone_goto_quat[1] ** 2)
-
-    # Calculating quaternion transition
+    d = [calc_d_control(kdx, target[0], position[0], prev_position[0], time,
+            prev_time, 0),
+            calc_d_control(kdy, target[1], position[1], prev_position[1], time,
+            prev_time, 1),
+            calc_d_control(kdz, target[2], position[2], prev_position[2], time,
+            prev_time, 2), 0]
 
     offset_angle = calc_offset_angle(current_rotation)
-    # print offset_angle / pi
 
-    drone_goto = [cos(offset_angle) * final_x + sin(offset_angle) * final_y,
-            cos(offset_angle) * final_y - sin(offset_angle) * final_x]
+    rot_p = global_to_drone_coordinates(p, offset_angle)
+    rot_i = global_to_drone_coordinates(i, offset_angle)
+    rot_d = global_to_drone_coordinates(d, offset_angle)
 
-    new_norm = sqrt(drone_goto[0] ** 2 + drone_goto[1] ** 2)
+    message.linear.x = rot_p[0] + rot_i[0] + rot_d[0]
+    message.linear.y = rot_p[1] + rot_i[1] + rot_d[1]
+    message.linear.z = rot_p[2] + rot_i[2] + rot_d[2]
+    message.angular.z = rot_p[3] + rot_i[3] + rot_d[3]
 
-    message.linear.x = drone_goto[0] / new_norm * norm
-    message.linear.y = drone_goto[1] / new_norm * norm
-    message.linear.z = pz
-    message.angular.z = p_rotation
-
-    # print str(global_goto_quat) + "\t" + "GLOBAL"
-    # print str(intermediate_quat) + "\t" + "INTER"
-    # print current_rotation
-    print "%f\t%f\t%f\t%f\t%f" % (final_x, final_y, message.linear.x,
-            message.linear.y, message.angular.z)
+    print "%f\t%f\t%f\t%f\t%f\t%f" % (p[0], p[1], d[0], d[1], p[2], d[2])
 
     # print message.angular.z
 
@@ -291,9 +275,26 @@ def handler(vrpn):
     prev_time = time
 
 
+def wand_handler(vrpn):
+
+    wand_position = [vrpn.pose.position.z, vrpn.pose.position.x,
+            vrpn.pose.position.y]
+
+    wand_current_rotation = [vrpn.pose.orientation.z,
+                -vrpn.pose.orientation.x, vrpn.pose.orientation.y,
+                vrpn.pose.orientation.w]
+
+    if False:
+        global target
+        target[0] = wand_position[0]
+        target[1] = wand_position[1]
+
+        global target_rotation
+        target_rotation = wand_current_rotation
+
+
+
 if __name__ == '__main__':
     main()
-
-    # calc_p_control_angle(0, [0, 0, 0, 1], [0, -0.7, 0, -0.7])
 
     spin()
