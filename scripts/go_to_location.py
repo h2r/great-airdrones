@@ -63,6 +63,21 @@ def main():
     Subscriber("/vrpn_client_node/ardrone/pose", PoseStamped, handler,
             queue_size=1)
 
+def calc_offset_angle(current):
+    """Calculates the offset angle from the x axis positiion"""
+
+    x_axis = [1, 0, 0, 0]
+    a = quaternion_multiply(x_axis, quaternion_inverse(current))
+    rotation = quaternion_multiply(quaternion_multiply(a, x_axis), quaternion_inverse(a))
+    angle = atan2(rotation[1], rotation[0])
+    if abs(angle) < 0.1:
+        angle = 0
+    if angle < 0:
+        angle += 2 * pi
+
+    return angle
+
+
 def calc_p_control_angle(beta, target, current):
     """Calculates p for the angle"""
 
@@ -230,26 +245,33 @@ def handler(vrpn):
 
     global_goto_quat = [final_x / norm, final_y / norm, 0, 0]
 
-
-    # print global_goto_quat
-
     drone_goto_quat = quaternion_multiply(quaternion_multiply(current_rotation,
         global_goto_quat), quaternion_inverse(current_rotation))
 
-    new_norm = sqrt(drone_goto_quat[0] ** 2 + drone_goto_quat[1] ** 2)
+    # new_norm = sqrt(drone_goto_quat[0] ** 2 + drone_goto_quat[1] ** 2)
 
     # Calculating quaternion transition
 
-    message.linear.x = drone_goto_quat[0] / new_norm * norm
-    message.linear.y = drone_goto_quat[1] / new_norm * norm
+    offset_angle = calc_offset_angle(current_rotation)
+    # print offset_angle / pi
+
+    drone_goto = [cos(offset_angle) * final_x + sin(offset_angle) * final_y,
+            cos(offset_angle) * final_y - sin(offset_angle) * final_x]
+
+    new_norm = sqrt(drone_goto[0] ** 2 + drone_goto[1] ** 2)
+
+    message.linear.x = drone_goto[0] / new_norm * norm
+    message.linear.y = drone_goto[1] / new_norm * norm
     message.linear.z = pz
-    message.angular.z = 0
+    message.angular.z = p_rotation * 0
+
+    # print str(global_goto_quat) + "\t" + "GLOBAL"
+    # print str(intermediate_quat) + "\t" + "INTER"
+    # print current_rotation
+    print "%f\t%f\t%f\t%f\t%f" % (final_x, final_y, message.linear.x,
+            message.linear.y, message.angular.z)
 
     # print message.angular.z
-
-    print str(final_x) + "\t" + str(final_y) + "\tINITIAL"
-    print str(message.linear.x) + "\t" + str(message.linear.y) + "\tFINAL"
-
 
     now = Time.now()
     # print now.to_sec() - startTime
