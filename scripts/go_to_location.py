@@ -19,7 +19,7 @@ PATH_PUB = Publisher('/virtual/ardrone_path', Path, queue_size=1)
 
 
 target = [-0.617, -0.404, 1]
-target_rotation = [0, 1, 0, 0]
+target_rotation = 0
 
 prev_position = [0, 0, 0]
 prev_time = 0
@@ -43,7 +43,7 @@ kpz = 0.5
 kiz = 0
 kdz = 0
 
-kp_rotation = 0.2
+kp_rotation = 0.5
 
 
 # Variables for d calculations
@@ -87,20 +87,24 @@ def calc_offset_angle(current):
 def calc_p_control_angle(beta, target, current):
     """Calculates p for the angle"""
 
-    x_axis = [1, 0, 0, 0]
-    a = quaternion_multiply(target, quaternion_inverse(current))
-    rotation = quaternion_multiply(quaternion_multiply(a, x_axis),
-                                quaternion_inverse(a))
-    # print rotation
-    angle = atan2(rotation[1], rotation[0])
-    if abs(angle) < 0.10:
-        angle = 0
-    if angle < 0:
-        angle += 2 * pi
+    # x_axis = [1, 0, 0, 0]
+    # a = quaternion_multiply(target, quaternion_inverse(current))
+    # rotation = quaternion_multiply(quaternion_multiply(a, x_axis),
+    #                             quaternion_inverse(a))
+    # # print rotation
+    # angle = atan2(rotation[1], rotation[0])
+    # # if abs(angle) < 0.10:
+    # #     angle = 0
+    # if angle < 0:
+    #     angle += 2 * pi
     # if angle < pi:
-    #     angle *= -1
-    print angle / pi
-    after_p = calc_p_control(beta, 0, angle)
+    #     angle = -angle
+    # # elif angle > pi:
+    # #     angle -= pi
+    # print angle / pi
+    angle = calc_offset_angle(current)
+    after_p = calc_p_control(beta, target, angle)
+    print "%f\t%f\t%f" % (target - angle, after_p, angle)
     return after_p
 
 
@@ -207,10 +211,10 @@ def handler(vrpn):
     marker.pose.position.x = target[0]
     marker.pose.position.y = target[1]
     marker.pose.position.z = target[2]
-    marker.pose.orientation.x = target_rotation[0]
-    marker.pose.orientation.y = target_rotation[1]
-    marker.pose.orientation.z = target_rotation[2]
-    marker.pose.orientation.w = target_rotation[3]
+    # marker.pose.orientation.x = target_rotation[0]
+    # marker.pose.orientation.y = target_rotation[1]
+    # marker.pose.orientation.z = target_rotation[2]
+    # marker.pose.orientation.w = target_rotation[3]
 
     MARKER_PUB.publish(marker)
 
@@ -299,8 +303,16 @@ if __name__ == '__main__':
     main()
 
     sleep(10)
-    target_rotation = [0, 0, 0.5, 0.5]
+    target_rotation = pi
+    target = [-0.617, -0.404, 1.5]
     sleep(10)
-    target_rotation = [0, 0, 0.5, 0.5]
+    target_rotation = pi/2
+    target = [0, -0.404, 1.5]
+    sleep(10)
+    target_rotation = 0
+    target = [0, -0.404, 1]
+    sleep(10)
+    target_rotation = -pi/2
+    target = [-0.617, -0.404, 2]
 
     spin()
