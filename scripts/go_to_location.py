@@ -9,6 +9,7 @@ from rospy import init_node, Subscriber, spin, Publisher, Time
 from geometry_msgs.msg import Twist, PoseStamped
 from tf.transformations import quaternion_inverse, quaternion_multiply
 from nav_msgs.msg import Path
+import numpy as np
 
 init_node('go_to_location')
 
@@ -60,10 +61,66 @@ def main():
     """Main program"""
 
     Subscriber("/vrpn_client_node/ardrone/pose", PoseStamped, handler,
-            queue_size=1)
+               queue_size=1)
 
     Subscriber("/vrpn_client_node/wand/pose", PoseStamped, wand_handler,
-            queue_size=1)
+               queue_size=1)
+
+    # Automated pd parameter finding
+    log = open("p_logfile.txt", 'w')
+    for i in xrange(1, 10):
+        print "Going back"
+        # Going back to starting location
+        global kpx
+        kpx = 0.3
+        global kpy
+        kpy = 0.3
+        global kdx
+        kdx = -0.3
+        global kdy
+        kdy = -0.3
+        global target
+        target = [0, 0, 1]
+        sleep(10)
+
+        # Testing new kdx, kdy
+        kd = i / -10.0
+        global kpx
+        kpx = 0.6
+        global kpy
+        kpy = 0.6
+        global kdx
+        kdx = kd
+        global kdy
+        kdy = kd
+        global target
+        target = [-0.7, -0.7, 1]
+        print "kd = %f\t i = %f" % (kd, i)
+
+        # Wait for the drone to settle
+        path.poses = []
+        sleep(10)
+
+        # Calculate variance over last 30 seconds
+        x_terms = []
+        y_terms = []
+        for pose in path.poses:
+            x_terms.append(pose.pose.position.x)
+            y_terms.append(pose.pose.position.y)
+
+        x_variance = np.var(np.array(x_terms))
+        y_variance = np.var(np.array(y_terms))
+
+        print "%f\t%f" % (x_variance, y_variance)
+
+        # Writes kdx \t kdy \t variance
+        log.write("%f\t%f\t%f\t%f\n" % (kd, kd, x_variance, y_variance))
+    kdx = -0.3
+    kdy = -0.3
+    target = [0, 0, 1]
+    log.close()
+    print "done"
+
 
 def global_to_drone_coordinates(mat, angle):
     """Converts from global to drone coordinates"""
@@ -104,7 +161,7 @@ def calc_p_control_angle(beta, target, current):
     # print angle / pi
     angle = calc_offset_angle(current)
     after_p = calc_p_control(beta, target, angle)
-    print "%f\t%f\t%f" % (target - angle, after_p, angle)
+    # print "%f\t%f\t%f" % (target - angle, after_p, angle)
     return after_p
 
 
@@ -112,19 +169,19 @@ def calc_p_control(kp, target, current):
     """Calculates p"""
     return kp * (target - current)
 
-def calc_i_control(ki, target, axis):
-    prev_time = 0
-    val = 0
-    for pose in path.poses:
-        time = pose.header.stamp.to_sec()
-        if axis == "x":
-            pos = pose.pose.position.x
-        if axis == "y":
-            pos = pose.pose.position.y
-        if axis == "z":
-            pos = pose.pose.position.z
-        val += (time - prev_time) * (target - pos)
-    return ki * val
+# def calc_i_control(ki, target, axis):
+    # prev_time = 0
+    # val = 0
+    # for pose in path.poses:
+    #     time = pose.header.stamp.to_sec()
+    #     if axis == "x":
+    #         pos = pose.pose.position.x
+    #     if axis == "y":
+    #         pos = pose.pose.position.y
+    #     if axis == "z":
+    #         pos = pose.pose.position.z
+    #     val += (time - prev_time) * (target - pos)
+    # return ki * val
 
 
 def calc_d_control(kd, target, current, prev, time, prev_time, axis):
@@ -268,8 +325,6 @@ def handler(vrpn):
     now = Time.now()
     # print now.to_sec() - startTime
 
-    if len(path.poses) > 100000:
-        path.poses.pop(0)
     path.poses.append(pos_pose)
     PATH_PUB.publish(path)
 
@@ -302,17 +357,6 @@ def wand_handler(vrpn):
 if __name__ == '__main__':
     main()
 
-    sleep(10)
-    target_rotation = pi
-    target = [-0.617, -0.404, 1.5]
-    sleep(10)
-    target_rotation = pi/2
-    target = [0, -0.404, 1.5]
-    sleep(10)
-    target_rotation = 0
-    target = [0, -0.404, 1]
-    sleep(10)
-    target_rotation = -pi/2
-    target = [-0.617, -0.404, 2]
+
 
     spin()
