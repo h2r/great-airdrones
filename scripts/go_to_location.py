@@ -68,53 +68,70 @@ def main():
 
     # Automated pd parameter finding
     log = open("p_logfile.txt", 'w')
-    for i in xrange(1, 10):
-        print "Going back"
-        # Going back to starting location
-        global kpx
-        kpx = 0.3
-        global kpy
-        kpy = 0.3
-        global kdx
-        kdx = -0.3
-        global kdy
-        kdy = -0.3
-        global target
-        target = [0, 0, 1]
-        sleep(10)
+    for i in xrange(5, 7):
+        kp = i / 10.0
+        for j in xrange(1, 7):
+            print "Going back"
+            # Going back to starting location
+            global kpx
+            kpx = 0.3
+            global kpy
+            kpy = 0.3
+            global kdx
+            kdx = -0.3
+            global kdy
+            kdy = -0.3
+            global target
+            target = [0, 0, 1]
+            print "%f, %f, %f, %f" % (kpx, kpy, kdx, kdy)
+            sleep(10)
 
-        # Testing new kdx, kdy
-        kd = i / -10.0
-        global kpx
-        kpx = 0.6
-        global kpy
-        kpy = 0.6
-        global kdx
-        kdx = kd
-        global kdy
-        kdy = kd
-        global target
-        target = [-0.7, -0.7, 1]
-        print "kd = %f\t i = %f" % (kd, i)
+            # Testing new kdx, kdy
+            kd = j / -10.0
+            global kpx
+            kpx = kp
+            global kpy
+            kpy = kp
+            global kdx
+            kdx = kd
+            global kdy
+            kdy = kd
+            global target
+            target = [-0.7, -0.7, 1]
+            print "kp = %f\t kd = %f" % (kp, kd)
 
-        # Wait for the drone to settle
-        path.poses = []
-        sleep(10)
+            # Wait for the drone to settle
+            path.poses = []
+            sleep(10)
 
-        # Calculate variance over last 30 seconds
-        x_terms = []
-        y_terms = []
-        for pose in path.poses:
-            x_terms.append(pose.pose.position.x)
-            y_terms.append(pose.pose.position.y)
+            # Calculate variance over last 30 seconds
+            x_terms = []
+            y_terms = []
+            for pose in path.poses:
+                x_terms.append(pose.pose.position.x)
+                y_terms.append(pose.pose.position.y)
 
-        x_variance = np.var(np.array(x_terms))
-        y_variance = np.var(np.array(y_terms))
+            x_terms = np.array(x_terms)
+            y_terms = np.array(y_terms)
 
-        print "%f\t%f" % (x_variance, y_variance)
+            x_variance = np.var(x_terms)
+            y_variance = np.var(y_terms)
 
-        # Writes kdx \t kdy \t variance
-        log.write("%f\t%f\t%f\t%f\n" % (kd, kd, x_variance, y_variance))
+            x_abs = np.abs(x_terms)
+            y_abs = np.abs(y_terms)
+            string = "%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f\n" \
+            % (kp, kp, kd, kd, x_variance, y_variance, np.amax(x_abs),
+                    np.amax(y_abs), np.amin(x_abs), np.amin(y_abs),
+                    np.mean(x_terms), np.mean(y_terms), np.std(x_terms),
+                    np.std(y_terms))
+
+
+            print string
+
+            # Writes to file
+            log.write(string)
+    kpx = 0.3
+    kpy = 0.3
     kdx = -0.3
     kdy = -0.3
     target = [0, 0, 1]
