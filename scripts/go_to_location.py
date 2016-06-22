@@ -3,12 +3,13 @@
 
 """Hovering script"""
 
-from math import sin, cos, pi, atan2
+from math import sin, cos, pi, atan2, sqrt
 from time import sleep
 from rospy import init_node, Subscriber, spin, Publisher, Time
 from geometry_msgs.msg import Twist, PoseStamped
 from tf.transformations import quaternion_inverse, quaternion_multiply
 from nav_msgs.msg import Path
+from std_msgs.msg import Empty
 import numpy as np
 
 init_node('go_to_location')
@@ -17,9 +18,10 @@ TWIST_PUB = Publisher('/cmd_vel', Twist, queue_size=1)
 MARKER_PUB = Publisher('/virtual/target', PoseStamped, queue_size=1)
 POS_PUB = Publisher('/virtual/ardrone', PoseStamped, queue_size=1)
 PATH_PUB = Publisher('/virtual/ardrone_path', Path, queue_size=1)
+LAND_PUB = Publisher('/ardrone/land', Empty, queue_size=1)
 
 
-target = [-0.617, -0.404, 1]
+target = [-0.8359, -0.413, 0.6]
 target_rotation = 0
 
 prev_position = [0, 0, 0]
@@ -32,15 +34,15 @@ num_observations = 0
 sum_observations = [0, 0, 0]
 square_observations = [0, 0, 0]
 
-kpx = 0.2
+kpx = 0.31
 kix = 0
-kdx = -0.2
+kdx = -0.27
 
-kpy = 0.2
+kpy = 0.31
 kiy = 0
-kdy = -0.2
+kdy = -0.27
 
-kpz = 0.5
+kpz = 1
 kiz = 0
 kdz = 0
 
@@ -138,6 +140,11 @@ def main():
         target = [0, 0, 1]
         log.close()
         print "done"
+
+
+def calc_distance(current):
+    """Calculates current offset distance"""
+    return sqrt((current[0] - target[0]) ** 2 + (current[1] - target[1]) ** 2)
 
 
 def global_to_drone_coordinates(mat, angle):
@@ -322,6 +329,15 @@ def handler(vrpn):
             calc_d_control(kdz, target[2], position[2], prev_position[2], time,
             prev_time, 2), 0]
 
+    # if abs(p[0]) < 0.001:
+    #     p[0] = 0
+    # if abs(p[1]) < 0.001:
+    #     p[1] = 0
+    # if abs(d[0]) < 0.001:
+    #     d[0] = 0
+    # if abs(d[1]) < 0.001:
+    #     d[1] = 0
+
     offset_angle = calc_offset_angle(current_rotation)
 
     rot_p = global_to_drone_coordinates(p, offset_angle)
@@ -333,7 +349,8 @@ def handler(vrpn):
     message.linear.z = rot_p[2] + rot_i[2] + rot_d[2]
     message.angular.z = rot_p[3] + rot_i[3] + rot_d[3]
 
-    print "%f\t%f\t%f\t%f\t%f" % (p[0], p[1], d[0], d[1], p[3])
+    # print "%f\t%f\t%f\t%f\t%f" % (p[0], p[1], d[0], d[1], p[3])
+    # print position
 
     # print message.angular.z
 
@@ -351,6 +368,14 @@ def handler(vrpn):
 
     global prev_time
     prev_time = time
+
+    # Landing at location
+    if True:
+        dist = calc_distance(position)
+        print dist
+        if dist < 0.02:
+            print "######################"
+            LAND_PUB.publish(Empty())
 
 
 def wand_handler(vrpn):
@@ -374,7 +399,5 @@ def wand_handler(vrpn):
 
 if __name__ == '__main__':
     main()
-
-
 
     spin()

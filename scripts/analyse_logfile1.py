@@ -57,22 +57,19 @@ y_std = to_np(y_std)
 x = kpx * 10 + np.abs(kdx)
 y = kpy * 10 + np.abs(kdy)
 
+x_variance_line = plt.plot(x, x_variance, label="x_variance")
+x_max_line = plt.plot(x, x_max, label="x_max")
+x_min_line = plt.plot(x, x_min, label="x_min")
+x_mean_line = plt.plot(x, x_mean, label="x_mean")
+x_std_line = plt.plot(x, x_std, label="x_std")
+
 y_variance_line = plt.plot(y, y_variance, label="y_variance")
-
 y_max_line = plt.plot(y, y_max, label="y_max")
-
 y_min_line = plt.plot(y, y_min, label="y_min")
-
 y_mean_line = plt.plot(y, y_mean, label="y_mean")
-
 y_std_line = plt.plot(y, y_std, label="y_std")
 
-plt.legend(bbox_to_anchor=(0, 0), loc='upper left', ncol=1)
+plt.legend(bbox_to_anchor=(1, 1), loc='upper right', ncol=1)
 plt.grid(True)
-
-print "y_std"
-print np.argmin(np.abs(y_std))
-
-print y[np.argmin(np.abs(y_std))]
 
 plt.show()
