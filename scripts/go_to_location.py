@@ -32,13 +32,13 @@ num_observations = 0
 sum_observations = [0, 0, 0]
 square_observations = [0, 0, 0]
 
-kpx = 0.3
+kpx = 0.2
 kix = 0
-kdx = -0.3
+kdx = -0.2
 
-kpy = 0.3
+kpy = 0.2
 kiy = 0
-kdy = -0.3
+kdy = -0.2
 
 kpz = 0.5
 kiz = 0
@@ -66,77 +66,78 @@ def main():
     Subscriber("/vrpn_client_node/wand/pose", PoseStamped, wand_handler,
                queue_size=1)
 
-    # Automated pd parameter finding
-    log = open("p_logfile.txt", 'w')
-    for i in xrange(5, 7):
-        kp = i / 10.0
-        for j in xrange(1, 7):
-            print "Going back"
-            # Going back to starting location
-            global kpx
-            kpx = 0.3
-            global kpy
-            kpy = 0.3
-            global kdx
-            kdx = -0.3
-            global kdy
-            kdy = -0.3
-            global target
-            target = [0, 0, 1]
-            print "%f, %f, %f, %f" % (kpx, kpy, kdx, kdy)
-            sleep(10)
+    if False:
+        # Automated pd parameter finding
+        log = open("p_logfile.txt", 'w')
+        for i in xrange(5, 7):
+            kp = i / 10.0
+            for j in xrange(1, 7):
+                print "Going back"
+                # Going back to starting location
+                global kpx
+                kpx = 0.3
+                global kpy
+                kpy = 0.3
+                global kdx
+                kdx = -0.3
+                global kdy
+                kdy = -0.3
+                global target
+                target = [0, 0, 1]
+                print "%f, %f, %f, %f" % (kpx, kpy, kdx, kdy)
+                sleep(10)
 
-            # Testing new kdx, kdy
-            kd = j / -10.0
-            global kpx
-            kpx = kp
-            global kpy
-            kpy = kp
-            global kdx
-            kdx = kd
-            global kdy
-            kdy = kd
-            global target
-            target = [-0.7, -0.7, 1]
-            print "kp = %f\t kd = %f" % (kp, kd)
+                # Testing new kdx, kdy
+                kd = j / -10.0
+                global kpx
+                kpx = kp
+                global kpy
+                kpy = kp
+                global kdx
+                kdx = kd
+                global kdy
+                kdy = kd
+                global target
+                target = [-0.7, -0.7, 1]
+                print "kp = %f\t kd = %f" % (kp, kd)
 
-            # Wait for the drone to settle
-            path.poses = []
-            sleep(10)
+                # Wait for the drone to settle
+                path.poses = []
+                sleep(10)
 
-            # Calculate variance over last 30 seconds
-            x_terms = []
-            y_terms = []
-            for pose in path.poses:
-                x_terms.append(pose.pose.position.x)
-                y_terms.append(pose.pose.position.y)
+                # Calculate variance over last 30 seconds
+                x_terms = []
+                y_terms = []
+                for pose in path.poses:
+                    x_terms.append(pose.pose.position.x)
+                    y_terms.append(pose.pose.position.y)
 
-            x_terms = np.array(x_terms)
-            y_terms = np.array(y_terms)
+                x_terms = np.array(x_terms)
+                y_terms = np.array(y_terms)
 
-            x_variance = np.var(x_terms)
-            y_variance = np.var(y_terms)
+                x_variance = np.var(x_terms)
+                y_variance = np.var(y_terms)
 
-            x_abs = np.abs(x_terms)
-            y_abs = np.abs(y_terms)
-            string = "%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f\n" \
-            % (kp, kp, kd, kd, x_variance, y_variance, np.amax(x_abs),
-                    np.amax(y_abs), np.amin(x_abs), np.amin(y_abs),
-                    np.mean(x_terms), np.mean(y_terms), np.std(x_terms),
-                    np.std(y_terms))
+                x_abs = np.abs(x_terms)
+                y_abs = np.abs(y_terms)
+                string = "%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f\n" \
+                % (kp, kp, kd, kd, x_variance, y_variance, np.amax(x_abs),
+                        np.amax(y_abs), np.amin(x_abs), np.amin(y_abs),
+                        np.mean(x_terms), np.mean(y_terms), np.std(x_terms),
+                        np.std(y_terms))
 
 
-            print string
+                print string
 
-            # Writes to file
-            log.write(string)
-    kpx = 0.3
-    kpy = 0.3
-    kdx = -0.3
-    kdy = -0.3
-    target = [0, 0, 1]
-    log.close()
-    print "done"
+                # Writes to file
+                log.write(string)
+        kpx = 0.3
+        kpy = 0.3
+        kdx = -0.3
+        kdy = -0.3
+        target = [0, 0, 1]
+        log.close()
+        print "done"
 
 
 def global_to_drone_coordinates(mat, angle):
@@ -332,7 +333,7 @@ def handler(vrpn):
     message.linear.z = rot_p[2] + rot_i[2] + rot_d[2]
     message.angular.z = rot_p[3] + rot_i[3] + rot_d[3]
 
-    # print "%f\t%f\t%f\t%f\t%f" % (p[0], p[1], d[0], d[1], p[3])
+    print "%f\t%f\t%f\t%f\t%f" % (p[0], p[1], d[0], d[1], p[3])
 
     # print message.angular.z
 
