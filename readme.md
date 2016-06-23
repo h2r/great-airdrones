@@ -12,6 +12,7 @@ Optitrack
 - [ ] Fabricate custom hull
 - [ ] Determine how ardrone_autonomy flies the drone (what determines
 linear/angular velocity? etc)
+- [ ] Recalculate pid controller tests
 
 # Reading
 - [ ] SLAM Paper
