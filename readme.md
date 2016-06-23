@@ -15,8 +15,8 @@ linear/angular velocity? etc)
 - [ ] Recalculate pid controller tests
 
 # Reading
-- [ ] SLAM Paper
+- [ ] [SLAM Paper](http://people.eecs.berkeley.edu/~pabbeel/cs287-fa09/readings/Durrant-Whyte_Bailey_SLAM-tutorial-I.pdf)
 - [ ] RGB Monocular SLAM papers
-- [ ] Lightfield paper
-- [ ] Applied AI Course Unit 2, uncertainty
+- [ ] Lightfield paper (In email from Tellex)
+- [ ] [Applied AI Course Unit 2, uncertainty] (https://edge.edx.org/courses/course-v1:Brown+CSCI1410+2015/2ce1704939854c1894a1ef0a02b23d36/)
 - [ ] Probabilistic Robotics textbook
