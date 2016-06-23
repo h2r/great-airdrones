@@ -8,7 +8,7 @@ Optitrack
 - [ ] Generating SLUGS using the drone
 
 # To Do Sometime (slightly less essential)
-- [ ] Override takeoff and landing sequences
+- [x] Override takeoff and landing sequences
 - [ ] Fabricate custom hull
 - [ ] Determine how ardrone_autonomy flies the drone (what determines
 linear/angular velocity? etc)
