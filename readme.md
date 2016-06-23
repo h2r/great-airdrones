@@ -4,6 +4,7 @@
 Optitrack
 - [x] Fine tuning PID parameters
 - [ ] Integrating with ein
+- [ ] Run through ein tutorial with drone
 - [ ] Generating SLUGS using the drone
 
 # To Do Sometime (slightly less essential)
@@ -11,3 +12,10 @@ Optitrack
 - [ ] Fabricate custom hull
 - [ ] Determine how ardrone_autonomy flies the drone (what determines
 linear/angular velocity? etc)
+
+# Reading
+- [ ] SLAM Paper
+- [ ] RGB Monocular SLAM papers
+- [ ] Lightfield paper
+- [ ] Applied AI Course Unit 2, uncertainty
+- [ ] Probabilistic Robotics textbook
