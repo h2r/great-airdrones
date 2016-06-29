@@ -3,7 +3,7 @@
 - [x] Writing PID controller to allow the drone to fly to any position in
 Optitrack
 - [x] Fine tuning PID parameters
-- [ ] Rewrite PID controller in C++
+- [x] Rewrite PID controller in C++
 - [ ] Integrating with ein
 - [ ] Run through ein tutorial with drone
 - [ ] Generating SLUGS using the drone
@@ -11,7 +11,7 @@ Optitrack
 # To Do Sometime (slightly less essential)
 - [x] Override takeoff and landing sequences
 - [ ] Fabricate custom hull
-- [ ] Determine how ardrone_autonomy flies the drone (what determines
+- [x] Determine how ardrone_autonomy flies the drone (what determines
 linear/angular velocity? etc)
 - [ ] Recalculate pid controller tests
 
