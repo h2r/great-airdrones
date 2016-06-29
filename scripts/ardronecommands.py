@@ -70,6 +70,10 @@ def land(drone=__firstdrone__):
     """Land the drone."""
     drone.land()
 
+def freeze(drone=__firstdrone__):
+    """Freeze drone"""
+    drone.freeze()
+
 
 def reset(drone=__firstdrone__):
     """Reset the drone."""

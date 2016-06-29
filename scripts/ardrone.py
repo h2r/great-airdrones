@@ -134,6 +134,10 @@ class ARDrone:
         self.settwist([0, 0, 0], [0, 0, 0])
         self.__takeoff.publish(Empty())
 
+    def freeze(self):
+        """Set twist to 0"""
+        self.settwist([0, 0, 0], [0, 0, 0])
+
     def land(self):
         """Land the drone."""
         self.settwist([0, 0, 0], [0, 0, 0])

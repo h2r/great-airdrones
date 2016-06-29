@@ -19,9 +19,12 @@ MARKER_PUB = Publisher('/virtual/target', PoseStamped, queue_size=1)
 POS_PUB = Publisher('/virtual/ardrone', PoseStamped, queue_size=1)
 PATH_PUB = Publisher('/virtual/ardrone_path', Path, queue_size=1)
 LAND_PUB = Publisher('/ardrone/land', Empty, queue_size=1)
+TAKEOFF_PUB = Publisher('/ardrone/takeoff', Empty, queue_size=1)
 
 
-target = [-0.8359, -0.413, 0.6]
+land_on_block = False
+
+target = [-0.5, -0.5, 1]
 target_rotation = 0
 
 prev_position = [0, 0, 0]
@@ -46,7 +49,7 @@ kpz = 1
 kiz = 0
 kdz = 0
 
-kp_rotation = 0.5
+kp_rotation = 0.3
 
 
 # Variables for d calculations
@@ -65,8 +68,16 @@ def main():
     Subscriber("/vrpn_client_node/ardrone/pose", PoseStamped, handler,
                queue_size=1)
 
-    Subscriber("/vrpn_client_node/wand/pose", PoseStamped, wand_handler,
+    Subscriber("/vrpn_client_node/box/pose", PoseStamped, box_handler,
                queue_size=1)
+
+    # sleep(10)
+    # LAND_PUB.publish(Empty())
+    # sleep(5)
+    # TAKEOFF_PUB.publish(Empty())
+    # sleep(1)
+    # global land_on_block
+    # land_on_block = True
 
     if False:
         # Automated pd parameter finding
@@ -370,15 +381,16 @@ def handler(vrpn):
     prev_time = time
 
     # Landing at location
-    if True:
+    if land_on_block:
         dist = calc_distance(position)
         print dist
         if dist < 0.02:
             print "######################"
             LAND_PUB.publish(Empty())
 
+    print calc_distance(position)
 
-def wand_handler(vrpn):
+def box_handler(vrpn):
 
     wand_position = [vrpn.pose.position.z, vrpn.pose.position.x,
             vrpn.pose.position.y]
@@ -387,13 +399,14 @@ def wand_handler(vrpn):
                 -vrpn.pose.orientation.x, vrpn.pose.orientation.y,
                 vrpn.pose.orientation.w]
 
-    if False:
+    if land_on_block:
         global target
         target[0] = wand_position[0]
         target[1] = wand_position[1]
+        target[2] = wand_position[2] + 0.1
 
-        global target_rotation
-        target_rotation = wand_current_rotation
+        # global target_rotation
+        # target_rotation = wand_current_rotation
 
 
 
