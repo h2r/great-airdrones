@@ -8,6 +8,12 @@ Optitrack
 - [ ] Run through ein tutorial with drone
 - [ ] Generating SLUGS using the drone
 
+# SLAM Goals
+- [ ] Write a program that takes a picture (map), chops it into small parts,
+and annotates poses (and optionally adds noise)
+- [ ] Write a program that takes the above as input and reassembles the map as
+a simulation of SLAM
+
 # To Do Sometime (slightly less essential)
 - [x] Override takeoff and landing sequences
 - [ ] Fabricate custom hull
