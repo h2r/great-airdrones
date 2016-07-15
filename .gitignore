@@ -1,3 +1,4 @@
 scripts/__pycache__/*
 .ardrone_cli_history
 *.DS_Store
+*.pyc
