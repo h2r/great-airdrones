@@ -14,11 +14,11 @@ class PID_Controller {
   PID_Controller() {
     twist_pub = n.advertise<geometry_msgs::Twist>("cmd_vel", 1);
     pos_pub =
-        n.advertise<geometry_msgs::PoseStamped>("ardrone/true_position", 1);
+      n.advertise<geometry_msgs::PoseStamped>("ardrone/true_position", 1);
     vrpn_sub = n.subscribe("vrpn_client_node/ardrone/pose", 1,
                            &PID_Controller::vrpn_callback, this);
-    curr_pose_set_sub = n.subscribe("ardrone/curr_pose", 1,
-                          &PID_Controller::curr_pose_set_callback, this);
+    curr_pose_set_sub = n.subscribe("ardrone/current_position", 1,
+                                    &PID_Controller::curr_pose_set_callback, this);
 
     ROS_INFO_STREAM("Made subscriber");
 
