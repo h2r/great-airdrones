@@ -106,6 +106,9 @@ class PID_Controller {
     tf::Quaternion a = x_axis * current.inverse();
     tf::Quaternion rotation = (a * x_axis) * a.inverse();
     float angle = atan2(rotation[1], rotation[0]);
+    if (angle < 0.0) {
+      angle += 2 * M_PI;
+    }
     return angle;
   }
 
@@ -115,8 +118,15 @@ class PID_Controller {
   float calc_p_control_angle(float kp, float current_rot,
                              tf::Quaternion true_rot) {
     float angle = calc_offset_angle(true_rot);
-    float after_p = calc_p_control(kp, current_rot, angle);
-    return after_p;
+    float alpha = current_rot - angle;
+    if (abs(alpha) > M_PI) {
+      ROS_INFO_STREAM("SDFSDFOSDJFSIODJFOISDJFOISDJFSDIFJSDOFJI");
+      alpha -= 2 * M_PI;
+    }
+    ROS_INFO_STREAM(alpha / M_PI);
+    /* float after_p = calc_p_control(kp, 0, alpha); */
+    /* return after_p; */
+    return alpha * kp;
   }
 
   /**
@@ -157,10 +167,11 @@ class PID_Controller {
     double roll, pitch, yaw;
     tf::Matrix3x3(current_rot).getRPY(roll, pitch, yaw);
 
+    float wanted_offset_angle = calc_offset_angle(current_rot);
     float p[4] = {calc_p_control(kp[0], current_pos[0], true_pos[0]),
                   calc_p_control(kp[1], current_pos[1], true_pos[1]),
                   calc_p_control(kp[2], current_pos[2], true_pos[2]),
-                  calc_p_control_angle(kp[3], pitch, true_rot)};
+                  calc_p_control_angle(kp[3], wanted_offset_angle, true_rot)};
 
     double time = vrpn.header.stamp.toSec();
 
@@ -171,7 +182,7 @@ class PID_Controller {
 
     /* ROS_INFO_STREAM(p[0] << ", " << p[1] << ", " << p[2] << ", " << p[3]); */
     /* ROS_INFO_STREAM(true_pos[0] << ", " << true_pos[1] << ", " << true_pos[2]); */
-    ROS_INFO_STREAM(current_pos[0] << ", " << current_pos[1] << ", " << current_pos[2]);
+    /* ROS_INFO_STREAM(current_pos[0] << ", " << current_pos[1] << ", " << current_pos[2]); */
 
     float rot_p[4], rot_d[4];
     global_to_drone_coordinates(p, offset_angle, rot_p);
@@ -182,21 +193,20 @@ class PID_Controller {
     twist_msg.linear.z = rot_p[2] + rot_d[2];
     twist_msg.angular.z = rot_p[3] + rot_d[3];
 
+    /* ROS_INFO_STREAM(twist_msg.angular.z << ", " << offset_angle / M_PI << ", " << wanted_offset_angle / M_PI); */
     twist_pub.publish(twist_msg);
 
   }
 
   void curr_pose_set_callback(const geometry_msgs::Pose input_current_pos) {
-    current_pos[0] = input_current_pos.position.x;
-    current_pos[1] = input_current_pos.position.y;
-    current_pos[2] = input_current_pos.position.z;
-    if (1.0 == input_current_pos.orientation.x +
-        input_current_pos.orientation.y + input_current_pos.orientation.z +
-        input_current_pos.orientation.w) {
-    current_rot[0] = input_current_pos.orientation.x;
-    current_rot[1] = input_current_pos.orientation.y;
-    current_rot[2] = input_current_pos.orientation.z;
-    current_rot[3] = input_current_pos.orientation.w;
+    current_pos[0] = fmin(1.6, fmax(0.1, input_current_pos.position.x));
+    current_pos[1] = fmin(-0.1, fmax(-1.6, input_current_pos.position.y));
+    current_pos[2] = fmin(1.6, fmax(0.1, input_current_pos.position.z));
+    if (!isnan(input_current_pos.orientation.x) && !isnan(input_current_pos.orientation.y) && !isnan(input_current_pos.orientation.z) && !isnan(input_current_pos.orientation.w)) {
+      current_rot[0] = input_current_pos.orientation.x;
+      current_rot[1] = input_current_pos.orientation.y;
+      current_rot[2] = input_current_pos.orientation.z;
+      current_rot[3] = input_current_pos.orientation.w;
     }
   }
 
